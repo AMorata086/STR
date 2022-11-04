@@ -312,18 +312,24 @@ void *controller(void *arg)
     {
         time_t init = time(NULL);
         // calling task of speed
-        task_speed();
-
+        if (task_speed != 0)
+            printf("Error in task_speed");
         // calling task of slope
-        task_slope();
+        if (task_slope() != 0)
+            printf("Error in task_slope");
+        // calling task of brake
+        if (task_brake() != 0)
+            printf("Error in task_brake");
+        // calling task of gas
+        if (task_gas() != 0)
+            printf("Error in task_gas");
+        // calling task of mixer
+        if (task_mix() != 0)
+            printf("Error in task_gas");
 
-        task_brake();
-
-        task_gas();
-
-        task_mix();
         time_t end = time(NULL);
-        nanosleep(10 - (init - end));
+        // esto hay que mirarlo mejor, no estoy seguro de que sea así
+        nanosleep((10 - (init - end)) * 1000000, NULL);
     }
 }
 
