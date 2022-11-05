@@ -35,10 +35,41 @@ float speed = 0.0;
 struct timespec time_msg = {0, 400000000};
 int fd_serie = -1;
 time_t last_mixer_change;
+struct timespec t_cycle = {10, 0};
 // group of binary variables defining the states
 int brake = 0;
 int gas = 0;
 int mixer = 0;
+
+//-------------------------------------
+//-  Function: timespec_subtract
+//      Subtracts x - y timespec structs
+//-------------------------------------
+int timespec_subtract(result, x, y)
+struct timespec *result, *x, *y;
+{
+    /* Perform the carry for the later subtraction by updating y. */
+    if (x->tv_nsec < y->tv_nsec)
+    {
+        int nsec = (y->tv_nsec - x->tv_nsec) / 1000000000 + 1;
+        y->tv_nsec -= 1000000000 * nsec;
+        y->tv_sec += nsec;
+    }
+    if (x->tv_nsec - y->tv_nsec > 1000000000)
+    {
+        int nsec = (x->tv_nsec - y->tv_nsec) / 1000000000;
+        y->tv_nsec += 1000000000 * nsec;
+        y->tv_sec -= nsec;
+    }
+
+    /* Compute the time remaining to wait.
+       tv_nsec is certainly positive. */
+    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_nsec = x->tv_nsec - y->tv_nsec;
+
+    /* Return 1 if result is negative. */
+    return x->tv_sec < y->tv_sec;
+}
 
 //-------------------------------------
 //-  Function: read_msg
@@ -307,12 +338,17 @@ int task_slope()
 //-------------------------------------
 void *controller(void *arg)
 {
+
+    struct timespec t_init, t_end, t_diff;
+
     // Endless loop
     while (1)
     {
-        time_t init = time(NULL);
+        if (clock_gettime(CLOCK_REALTIME, &t_init) < 0)
+            fprintf(stderr, "Error while getting init time");
+
         // calling task of speed
-        if (task_speed != 0)
+        if (task_speed() != 0)
             printf("Error in task_speed");
         // calling task of slope
         if (task_slope() != 0)
@@ -327,9 +363,15 @@ void *controller(void *arg)
         if (task_mix() != 0)
             printf("Error in task_gas");
 
-        time_t end = time(NULL);
-        // esto hay que mirarlo mejor, no estoy seguro de que sea así
-        nanosleep((10 - (init - end)) * 1000000, NULL);
+        if (clock_gettime(CLOCK_REALTIME, &t_end) < 0)
+            fprintf(stderr, "Error while getting end time");
+
+        // get the execution time
+        timespec_subtract(&t_diff, &t_end, &t_init);
+        // subtract the total cycle time and execution time
+        timespec_subtract(&t_diff, &t_cycle, &t_diff);
+        // sleep for the time remaining
+        nanosleep(&t_diff, NULL);
     }
 }
 
