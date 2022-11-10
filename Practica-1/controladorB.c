@@ -189,7 +189,7 @@ int task_brake()
     simulator(request, answer);
 #endif
 
-    if (0 == strcmp(answer, "BRK: OK\n"))
+    if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
         return 0;
@@ -233,7 +233,7 @@ int task_gas()
     simulator(request, answer);
 #endif
 
-    if (0 == strcmp(answer, "GAS: OK\n"))
+    if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
         return 0;
@@ -283,7 +283,7 @@ int task_mix()
     simulator(request, answer);
 #endif
 
-    if (0 == strcmp(answer, "MIX: OK\n"))
+    if (0 == strcmp(answer, "MIX:  OK\n"))
     {
         displayMix(mixer);
         last_mixer_change = current_time;
@@ -415,7 +415,7 @@ int task_lamp()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM: OK\n"))
+    if (strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(dark);
         return 0;
