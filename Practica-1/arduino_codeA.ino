@@ -14,14 +14,16 @@
 // --------------------------------------
 // Global Variables
 // --------------------------------------
-double speed = 55.5;
+double speed = 0; // 55.5
 bool request_received = false;
 bool requested_answered = false;
 char request[MESSAGE_SIZE + 1];
 char answer[MESSAGE_SIZE + 1];
+int count = 0;
 
 int DELAY_MS = 10;
-int engine = 0; // -1 brake, 1 accelerator, 0 none
+int brake = 0;
+int accel = 0;
 bool mix = false;
 int slope = 0; // -1 up, 0 flat, 1 down
 
@@ -30,7 +32,6 @@ int slope = 0; // -1 up, 0 flat, 1 down
 // --------------------------------------
 int comm_server()
 {
-    static int count = 0;
     char car_aux;
 
     // If there were a received msg, send the processed answer or ERROR if none.
@@ -59,7 +60,7 @@ int comm_server()
     {
         // read one character
         car_aux = Serial.read();
-
+        // Serial.println(car_aux);
         // skip if it is not a valid character
         if (((car_aux < 'A') || (car_aux > 'Z')) &&
             (car_aux != ':') && (car_aux != ' ') && (car_aux != '\n'))
@@ -70,18 +71,21 @@ int comm_server()
         // Store the character
         request[count] = car_aux;
 
+        // Serial.println(car_aux);
+        // Serial.println(count);
+
         // If the last character is an enter or
         // There are 9th characters set an enter and finish.
-        if ((request[count] == '\n') || (count == 8))
+        if ((request[count] == '\n') || (count == 7))
         {
-            request[count] = '\n';
-            count = 0;
+            request[count] = car_aux;
+            request[count + 1] = '\n';
             request_received = true;
+            count = 0;
             break;
         }
 
-        // Increment the count
-        count++;
+        count++; // Increment the count
     }
 }
 
@@ -93,6 +97,7 @@ int speed_req()
     // If there is a request not answered, check if this is the one
     if ((request_received) && (!requested_answered))
     {
+        Serial.println(request);
         if (0 == strcmp("SPD: REQ\n", request)) // velocidad
         {
             // send the answer for speed request
@@ -105,14 +110,16 @@ int speed_req()
         // ACELERADOR
         else if (0 == strcmp("GAS: SET\n", request))
         {
-            engine = 1;
+            accel = 1;
+            brake = 0;
             digitalWrite(13, HIGH);
             sprintf(answer, "GAS:  OK\n");
             requested_answered = true;
         }
         else if (0 == strcmp("GAS: CLR\n", request))
         {
-            engine = 0;
+            brake = 0;
+            accel = 0;
             digitalWrite(13, LOW);
             sprintf(answer, "GAS:  OK\n");
             requested_answered = true;
@@ -120,14 +127,16 @@ int speed_req()
         // FRENO
         else if (0 == strcmp("BRK: SET\n", request))
         {
-            engine = -1;
+            brake = 1;
+            accel = 0;
             digitalWrite(12, HIGH);
             sprintf(answer, "BRK:  OK\n");
             requested_answered = true;
         }
         else if (0 == strcmp("BRK: CLR\n", request))
         {
-            engine = 0;
+            brake = 0;
+            accel = 0; 
             digitalWrite(12, LOW);
             sprintf(answer, "BRK:  OK\n");
             requested_answered = true;
@@ -190,7 +199,16 @@ void physics()
     speed += (DELAY_MS * 0.25 / 1000) * slope;
 
     // calculo de velocidad (freno/acelerador)
-    speed += (DELAY_MS * 0.5 / 1000) * engine;
+    if (accel) {
+        speed += (DELAY_MS * 0.5 / 1000);
+    }
+    if (brake) { // El freno frena velocidad positiva y negativa
+        if (speed > 0) {
+            speed -= (DELAY_MS * 0.5 / 1000);
+        } else {
+            speed += (DELAY_MS * 0.5 / 1000);
+        }
+    }
 }
 
 // --------------------------------------
