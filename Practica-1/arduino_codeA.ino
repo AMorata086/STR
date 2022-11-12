@@ -27,6 +27,7 @@ int accel = 0;
 bool mix = false;
 int slope = 0; // -1 up, 0 flat, 1 down
 
+
 // --------------------------------------
 // Function: comm_server
 // --------------------------------------
@@ -54,6 +55,7 @@ int comm_server()
         requested_answered = false;
         memset(request, '\0', MESSAGE_SIZE + 1);
         memset(answer, '\0', MESSAGE_SIZE + 1);
+        count = 0;
     }
 
     while (Serial.available())
@@ -73,20 +75,31 @@ int comm_server()
 
         // Serial.println(car_aux);
         // Serial.println(count);
-
         // If the last character is an enter or
         // There are 9th characters set an enter and finish.
+        if (request[count] == '\n') {
+            request_received = true;
+            break;
+        }
+        else if (count == 7) {
+            request[count] = car_aux;
+
+            request[count + 1 ] = '\n';
+            request_received = true;
+            break;
+        }
+        /*
         if ((request[count] == '\n') || (count == 7))
         {
             request[count] = car_aux;
             request[count + 1] = '\n';
             request_received = true;
-            count = 0;
             break;
-        }
+        }*/
 
         count++; // Increment the count
     }
+    while(Serial.available()){Serial.read();}
 }
 
 // --------------------------------------
@@ -112,15 +125,12 @@ int speed_req()
         {
             accel = 1;
             brake = 0;
-            digitalWrite(13, HIGH);
             sprintf(answer, "GAS:  OK\n");
             requested_answered = true;
         }
         else if (0 == strcmp("GAS: CLR\n", request))
         {
-            brake = 0;
             accel = 0;
-            digitalWrite(13, LOW);
             sprintf(answer, "GAS:  OK\n");
             requested_answered = true;
         }
@@ -129,15 +139,12 @@ int speed_req()
         {
             brake = 1;
             accel = 0;
-            digitalWrite(12, HIGH);
             sprintf(answer, "BRK:  OK\n");
             requested_answered = true;
         }
         else if (0 == strcmp("BRK: CLR\n", request))
         {
             brake = 0;
-            accel = 0; 
-            digitalWrite(12, LOW);
             sprintf(answer, "BRK:  OK\n");
             requested_answered = true;
         }
@@ -145,14 +152,12 @@ int speed_req()
         else if (0 == strcmp("MIX: SET\n", request))
         {
             mix = true;
-            digitalWrite(11, HIGH);
             sprintf(answer, "MIX:  OK\n");
             requested_answered = true;
         }
         else if (0 == strcmp("MIX: CLR\n", request))
         {
             mix = false;
-            digitalWrite(11, LOW);
             sprintf(answer, "MIX:  OK\n");
             requested_answered = true;
         }
@@ -172,7 +177,12 @@ int speed_req()
             }
             requested_answered = true;
         }
+
+        digitalWrite(11, mix);
+        digitalWrite(13, accel);
+        digitalWrite(12, brake);
     }
+
     return 0;
 }
 
@@ -225,7 +235,6 @@ void setup()
     pinMode(10, OUTPUT); // VELOCIDAD
     pinMode(9, INPUT);   // PENDIENTE ARRIBA
     pinMode(8, INPUT);   // PENDIENTE ABAJO
-    pinMode(8, OUTPUT);
 }
 
 // --------------------------------------
