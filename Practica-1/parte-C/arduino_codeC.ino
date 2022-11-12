@@ -21,7 +21,7 @@ char request[MESSAGE_SIZE + 1];
 char answer[MESSAGE_SIZE + 1];
 int count = 0;
 
-int DELAY_MS = 10;
+int DELAY_MS = 200;
 bool brake = false;
 bool accel = false;
 bool mix = false;
@@ -31,6 +31,19 @@ double light = 0;
 bool lamp = false;
 
 long distance = 0;
+
+/**
+ * MODO
+ * 0 - normal / seleccion de distancia
+ * 1 - acercamiento al deposito
+ * 2 - modo de parada
+ * 3 - modo selección en parada
+*/
+int mode = 0;
+
+void next_mode(){
+    mode = (mode + 1)%4;
+}
 
 // --------------------------------------
 // Function: comm_server
@@ -222,6 +235,13 @@ int speed_req()
     return 0;
 }
 
+void write7(int a3, int a2, int a1, int a0) {
+    digitalWrite(2, a0);
+    digitalWrite(3, a1);
+    digitalWrite(4, a2);
+    digitalWrite(5, a3);
+}
+
 void physics()
 {
     // calculo de pendiente
@@ -265,10 +285,27 @@ void physics()
     else if (light <= 0)
         light = 0;
 
-    Serial.println(light);
+    if (mode == 0) {
+        distance = map(analogRead(1), 0, 1023, 10000, 90000);
 
-    distance = map(analogRead(1), 0, 1023, 10000, 90000);
-    Serial.println(distance);
+        int digit = (int) (distance/10000);
+        switch (digit)
+        {
+            case 1: write7(0, 0, 0, 1); break;
+            case 2: write7(0, 0, 1, 0); break;
+            case 3: write7(0, 0, 1, 1); break;
+            case 4: write7(0, 1, 0, 0); break;
+            case 5: write7(0, 1, 0, 1); break;
+            case 6: write7(0, 1, 1, 0); break;
+            case 7: write7(0, 1, 1, 1); break;
+            case 8: write7(1, 0, 0, 0); break;
+            case 9: write7(1, 0, 0, 1); break;
+            default: break;
+        }
+    }
+    // escribe en el display la distancia seleccionada en decenas de miles
+    //write_display((int) (distance/10000));
+
 }
 
 // --------------------------------------
@@ -286,6 +323,10 @@ void setup()
     pinMode(9, INPUT);   // PENDIENTE ARRIBA
     pinMode(8, INPUT);   // PENDIENTE ABAJO
     pinMode(7, OUTPUT);   // FOCOS
+    pinMode(2, OUTPUT);
+    pinMode(3, OUTPUT);
+    pinMode(4, OUTPUT);
+    pinMode(5, OUTPUT);
 }
 
 // --------------------------------------
