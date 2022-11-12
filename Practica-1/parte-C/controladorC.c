@@ -37,11 +37,13 @@ int fd_serie = -1;
 time_t last_mixer_change;
 struct timespec t_cycle = {10, 0};
 int light;
+int state;
 // group of binary variables defining the states
 int brake = 0;
 int gas = 0;
 int mixer = 0;
 int dark = 0;
+int stop = 0;
 
 //-------------------------------------
 //-  Function: timespec_subtract
@@ -157,9 +159,9 @@ int task_speed()
     return 0;
 }
 //-------------------------------------
-//-  Function: task_brake
+//-  Function: task_brake_normal
 //-------------------------------------
-int task_brake()
+int task_brake_normal()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -201,9 +203,54 @@ int task_brake()
 }
 
 //-------------------------------------
-//-  Function: task_gas
+//-  Function: task_brake_brake
 //-------------------------------------
-int task_gas()
+int task_brake_brake()
+{
+    char request[MSG_LEN + 1];
+    char answer[MSG_LEN + 1];
+
+    // clear request and answer
+    memset(request, '\0', MSG_LEN + 1);
+    memset(answer, '\0', MSG_LEN + 1);
+
+    if (speed <= 2.5)
+    {
+        strcpy(request, "BRK: CLR\n");
+        brake = 0;
+    }
+    else
+    {
+        strcpy(request, "BRK: SET\n");
+        brake = 1;
+    }
+
+#if defined(ARDUINO)
+    // use UART serial module
+    write(fd_serie, request, MSG_LEN);
+    nanosleep(&time_msg, NULL);
+    read_msg(fd_serie, answer, MSG_LEN);
+#else
+    // Use the simulator
+    simulator(request, answer);
+#endif
+
+    if (0 == strcmp(answer, "BRK:  OK\n"))
+    {
+        displayBrake(brake);
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
+//-------------------------------------
+//-  Function: task_gas_normal
+//-------------------------------------
+int task_gas_normal()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -243,6 +290,51 @@ int task_gas()
         return 1;
     }
 }
+
+//-------------------------------------
+//-  Function: task_gas_brake
+//-------------------------------------
+int task_gas()
+{
+    char request[MSG_LEN + 1];
+    char answer[MSG_LEN + 1];
+
+    // clear request and answer
+    memset(request, '\0', MSG_LEN + 1);
+    memset(answer, '\0', MSG_LEN + 1);
+
+    if (speed <= 2.5)
+    {
+        strcpy(request, "GAS: SET\n");
+        gas = 1;
+    }
+    else
+    {
+        strcpy(request, "GAS: CLR\n");
+        gas = 0;
+    }
+
+#if defined(ARDUINO)
+    // use UART serial module
+    write(fd_serie, request, MSG_LEN);
+    nanosleep(&time_msg, NULL);
+    read_msg(fd_serie, answer, MSG_LEN);
+#else
+    // Use the simulator
+    simulator(request, answer);
+#endif
+
+    if (0 == strcmp(answer, "GAS:  OK\n"))
+    {
+        displayGas(gas);
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
 
 //-------------------------------------
 //-  Function: task_mix
@@ -395,9 +487,9 @@ int task_light()
 }
 
 //-------------------------------------
-//-  Function: task_lamp
+//-  Function: task_lamp_normal
 //-------------------------------------
-int task_lamp()
+int task_lamp_normal()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -432,6 +524,183 @@ int task_lamp()
     }
     else
     {
+        return 1;
+    }
+}
+
+//-------------------------------------
+//-  Function: task_lamp_brake
+//-------------------------------------
+int task_lamp_brake()
+{
+    char request[MSG_LEN + 1];
+    char answer[MSG_LEN + 1];
+
+    // clear request and answer
+    memset(request, '\0', MSG_LEN + 1);
+    memset(answer, '\0', MSG_LEN + 1);
+
+ 
+
+    strcpy(request, "LAM: SET\n");
+
+#if defined(ARDUINO)
+    // use UART serial module
+    write(fd_serie, request, MSG_LEN);
+    nanosleep(&time_msg, NULL);
+    read_msg(fd_serie, answer, MSG_LEN);
+#else
+    // Use the simulator
+    simulator(request, answer);
+#endif
+
+    // display lamp
+    if (strcmp(answer, "LAM:  OK\n"))
+    {
+        displayLamps(1);
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+//-------------------------------------
+//-  Function: task_lamp_stop
+//-------------------------------------
+int task_lamp_stop()
+{
+    char request[MSG_LEN + 1];
+    char answer[MSG_LEN + 1];
+
+    // clear request and answer
+    memset(request, '\0', MSG_LEN + 1);
+    memset(answer, '\0', MSG_LEN + 1);
+
+ 
+
+    strcpy(request, "LAM: SET\n");
+
+#if defined(ARDUINO)
+    // use UART serial module
+    write(fd_serie, request, MSG_LEN);
+    nanosleep(&time_msg, NULL);
+    read_msg(fd_serie, answer, MSG_LEN);
+#else
+    // Use the simulator
+    simulator(request, answer);
+#endif
+
+    // display lamp
+    if (strcmp(answer, "LAM:  OK\n"))
+    {
+        displayLamps(1);
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+//-------------------------------------
+//-  Function: task_distance
+//-------------------------------------
+int task_distance()
+{
+    char request[MSG_LEN + 1];
+    char answer[MSG_LEN + 1];
+
+    //--------------------------------
+    //  request distance and display it
+    //--------------------------------
+
+    // clear request and answer
+    memset(request, '\0', MSG_LEN + 1);
+    memset(answer, '\0', MSG_LEN + 1);
+
+    // request distance
+    strcpy(request, "DS:  REQ\n");
+
+#if defined(ARDUINO)
+    // use UART serial module
+    write(fd_serie, request, MSG_LEN);
+    nanosleep(&time_msg, NULL);
+    read_msg(fd_serie, answer, MSG_LEN);
+#else
+    // Use the simulator
+    simulator(request, answer);
+#endif
+
+    // display distance
+    if (1 == sscanf(answer, "DS:%d\n", &distance))
+    {   
+
+        switch (state)
+        {
+        case 0:
+            if (distance < 11000 && distance > 0)
+            {
+                state = 1; //we switch to break mode
+            }
+            break;
+        
+        case 1:
+            if (distance <= 0 && speed <= 10)
+            {
+                state = 2; //we switch to stop mode
+                distance = 0;
+                
+            }
+            break;
+        }
+    }
+    displayDistance(distance);
+    return 0;
+}
+
+//----------------------------------
+//  request stop information
+//----------------------------------
+int task_stop()
+{
+    char request[MSG_LEN + 1];
+    char answer[MSG_LEN + 1];
+
+    // clear request and answer
+    memset(request, '\0', MSG_LEN + 1);
+    memset(answer, '\0', MSG_LEN + 1);
+
+    // request stop
+    strcpy(request, "STP: REQ\n");
+
+#if defined(ARDUINO)
+    // use UART serial module
+    write(fd_serie, request, MSG_LEN);
+    nanosleep(&time_msg, NULL);
+    read_msg(fd_serie, answer, MSG_LEN);
+#else
+    // Use the simulator
+    simulator(request, answer);
+#endif
+
+    // display stop
+    if (0 == strcmp(answer_buf, "STP:  GO\n"))
+    {
+        stop = 0;
+        state = 0; //we switch to normal mode
+        displayStop(stop);
+        return 0;
+    }
+    else if (0 == strcmp(answer_buf, "STP:STOP\n"))
+    {
+        stop = 1;
+        displayStop(stop);
+        return 0;
+    }
+    else{
+
         return 1;
     }
 }
