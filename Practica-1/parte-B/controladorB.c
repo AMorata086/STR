@@ -20,7 +20,7 @@
 #include <rtems/termiostypes.h>
 #include <bsp.h>
 
-#include "displayC.h"
+#include "displayB.h"
 
 //-------------------------------------
 //-  Constants
