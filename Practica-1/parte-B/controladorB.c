@@ -35,7 +35,7 @@ float speed = 0.0;
 struct timespec time_msg = {0, 400000000};
 int fd_serie = -1;
 time_t last_mixer_change;
-struct timespec t_cycle = {10, 0};
+struct timespec t_cycle = {6, 0};
 int light;
 // group of binary variables defining the states
 int brake = 0;
@@ -189,7 +189,7 @@ int task_brake()
     simulator(request, answer);
 #endif
 
-    if (0 == strcmp(answer, "BRK: OK\n"))
+    if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
         return 0;
@@ -233,7 +233,7 @@ int task_gas()
     simulator(request, answer);
 #endif
 
-    if (0 == strcmp(answer, "GAS: OK\n"))
+    if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
         return 0;
@@ -283,7 +283,7 @@ int task_mix()
     simulator(request, answer);
 #endif
 
-    if (0 == strcmp(answer, "MIX: OK\n"))
+    if (0 == strcmp(answer, "MIX:  OK\n"))
     {
         displayMix(mixer);
         last_mixer_change = current_time;
@@ -338,7 +338,7 @@ int task_slope()
 //-------------------------------------
 //-  Function: read_light
 //-------------------------------------
-int read_light()
+int task_light()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -365,7 +365,17 @@ int read_light()
 #endif
 
     // display light
-    if (1 == sscanf(answer, "LIT:%f\n", &light))
+    char light_val[3];
+    if (light < 10)
+    {
+        sprintf(light_val, "0%d", light);
+    }
+    else
+    {
+        sprintf(light_val, "%d", light);
+    }
+
+    if (1 == sscanf(answer, "LIT: %s%%\n", light_val))
     {
         if (light < 50)
         {
@@ -415,7 +425,7 @@ int task_lamp()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM: OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(dark);
         return 0;
@@ -445,16 +455,20 @@ void *controller(void *arg)
             printf("Error in task_speed");
         // calling task of slope
         if (task_slope() != 0)
-            printf("Error in task_slope");
+            printf("Error in task_slope\n");
         // calling task of brake
         if (task_brake() != 0)
-            printf("Error in task_brake");
+            printf("Error in task_brake\n");
         // calling task of gas
         if (task_gas() != 0)
-            printf("Error in task_gas");
+            printf("Error in task_gas\n");
         // calling task of mixer
         if (task_mix() != 0)
-            printf("Error in task_gas");
+            printf("Error in task_gas\n");
+        if (task_light() != 0)
+            printf("Error in task_light\n");
+        if (task_lamp() != 0)
+            printf("Error in task_lamp\n");
 
         if (clock_gettime(CLOCK_REALTIME, &t_end) < 0)
             fprintf(stderr, "Error while getting end time");
