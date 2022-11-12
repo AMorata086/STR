@@ -338,7 +338,7 @@ int task_slope()
 //-------------------------------------
 //-  Function: read_light
 //-------------------------------------
-int read_light()
+int task_light()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -365,7 +365,17 @@ int read_light()
 #endif
 
     // display light
-    if (1 == sscanf(answer, "LIT:%f\n", &light))
+    char light_val[2];
+    if (light < 10)
+    {
+        sprintf(light_val, "0%d", light);
+    }
+    else
+    {
+        sprintf(light_val, "%d", light);
+    }
+
+    if (1 == sscanf(answer, "LIT: %s%%\n", &light_val))
     {
         if (light < 50)
         {
