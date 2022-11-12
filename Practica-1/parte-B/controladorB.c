@@ -365,7 +365,7 @@ int task_light()
 #endif
 
     // display light
-    char light_val[2];
+    char light_val[3];
     if (light < 10)
     {
         sprintf(light_val, "0%d", light);
@@ -375,7 +375,7 @@ int task_light()
         sprintf(light_val, "%d", light);
     }
 
-    if (1 == sscanf(answer, "LIT: %s%%\n", &light_val))
+    if (1 == sscanf(answer, "LIT: %s%%\n", light_val))
     {
         if (light < 50)
         {
@@ -425,7 +425,7 @@ int task_lamp()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM:  OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(dark);
         return 0;
