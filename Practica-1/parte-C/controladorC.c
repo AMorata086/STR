@@ -294,7 +294,7 @@ int task_gas_normal()
 //-------------------------------------
 //-  Function: task_gas_brake
 //-------------------------------------
-int task_gas()
+int task_gas_brake()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
