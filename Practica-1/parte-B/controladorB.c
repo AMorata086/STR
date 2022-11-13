@@ -451,46 +451,44 @@ void *controller(void *arg)
     while (1)
     {
         if (clock_gettime(CLOCK_REALTIME, &t_init) < 0)
-            fprintf(stderr, "Error while getting init time");
+            fprintf(stderr, "Error while getting init time of cycle\n");
 
+        /* tasks that execute every 5 seconds */
+        // calling task of light sensor
+        if (task_light() != 0)
+            fprintf(stderr, "Error in task_light\n");
+        // calling task of lamp
+        if (task_lamp() != 0)
+            fprintf(stderr, "Error in task_lamp\n");
         switch (cycle_counter)
         {
         case 0:
-            // tasks that execute every 10 seconds
+            /* tasks that execute every 10 seconds */
             // calling task of speed
             if (task_speed() != 0)
-                printf("Error in task_speed");
-            // calling task of slope
-            if (task_slope() != 0)
-                printf("Error in task_slope\n");
+                fprintf(stderr, "Error in task_speed\n");
             // calling task of brake
             if (task_brake() != 0)
-                printf("Error in task_brake\n");
+                fprintf(stderr, "Error in task_brake\n");
             // calling task of gas
             if (task_gas() != 0)
-                printf("Error in task_gas\n");
-            // calling task of mixer
-            if (task_mix() != 0)
-                printf("Error in task_gas\n");
-            // tasks that execute every 5 seconds
-            if (task_light() != 0)
-                printf("Error in task_light\n");
-            if (task_lamp() != 0)
-                printf("Error in task_lamp\n");
+                fprintf(stderr, "Error in task_gas\n");
             break;
         case 1:
-            // tasks that execute every 5 seconds
-            if (task_light() != 0)
-                printf("Error in task_light\n");
-            if (task_lamp() != 0)
-                printf("Error in task_lamp\n");
+            /* tasks that execute every 10 seconds */
+            // calling task of slope
+            if (task_slope() != 0)
+                fprintf(stderr, "Error in task_slope\n");
+            // calling task of mixer
+            if (task_mix() != 0)
+                fprintf(stderr, "Error in task_gas\n");
             break;
         }
 
         cycle_counter = (cycle_counter + 1) % N_CYCLES;
 
         if (clock_gettime(CLOCK_REALTIME, &t_end) < 0)
-            fprintf(stderr, "Error while getting end time");
+            fprintf(stderr, "Error while getting end time of cycle\n");
 
         // get the execution time
         timespec_subtract(&t_diff, &t_end, &t_init);
