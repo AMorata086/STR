@@ -62,7 +62,7 @@ int comm_server()
     {
         // read one character
         car_aux = Serial.read();
-        // Serial.println(car_aux);
+        //Serial.println(car_aux);
         // skip if it is not a valid character
         if (((car_aux < 'A') || (car_aux > 'Z')) &&
             (car_aux != ':') && (car_aux != ' ') && (car_aux != '\n'))
@@ -75,31 +75,24 @@ int comm_server()
 
         // Serial.println(car_aux);
         // Serial.println(count);
-        // If the last character is an enter or
-        // There are 9th characters set an enter and finish.
+        // If the last character is an enter finish
         if (request[count] == '\n') {
+            request[count] = car_aux;
             request_received = true;
             break;
         }
+        /*
         else if (count == 7) {
             request[count] = car_aux;
 
             request[count + 1 ] = '\n';
             request_received = true;
             break;
-        }
-        /*
-        if ((request[count] == '\n') || (count == 7))
-        {
-            request[count] = car_aux;
-            request[count + 1] = '\n';
-            request_received = true;
-            break;
         }*/
 
         count++; // Increment the count
     }
-    while(Serial.available()){Serial.read();}
+    // while(Serial.available()){Serial.read();}// FLUSH
 }
 
 // --------------------------------------
@@ -110,8 +103,8 @@ int speed_req()
     // If there is a request not answered, check if this is the one
     if ((request_received) && (!requested_answered))
     {
-        Serial.println(request);
-        if (0 == strcmp("SPD: REQ\n", request)) // velocidad
+        //Serial.println(request);
+        if (0 == strcmp("SPD: REQ\n", request)) // LEER VELOCIDAD
         {
             // send the answer for speed request
             char num_str[5];
@@ -194,16 +187,17 @@ void physics()
 
     if (up && !down)
     {
-        slope = 1;
-    }
-    if (!up && down)
-    {
         slope = -1;
+    }
+    else if (!up && down)
+    {
+        slope = 1;
     }
     else
     {
         slope = 0;
     }
+    // Serial.println(slope);
 
     // calculo de velocidad (pendiente)
     speed += (DELAY_MS * 0.25 / 1000) * slope;
@@ -219,6 +213,18 @@ void physics()
             speed += (DELAY_MS * 0.5 / 1000);
         }
     }
+
+    // Calculo del brillo del led de velocidad
+    int bright;
+    if (speed <= 40){
+      bright = 0;
+    } else if (speed >= 70) {
+      bright = 255;  
+    } else {
+      bright = (speed - 40) * 255 / 30;
+    }
+
+    analogWrite(10, bright);
 }
 
 // --------------------------------------
