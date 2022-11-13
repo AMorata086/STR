@@ -21,9 +21,9 @@ char request[MESSAGE_SIZE + 1];
 char answer[MESSAGE_SIZE + 1];
 int count = 0;
 
-int DELAY_MS = 10;
+int DELAY_MS = 200;
 int brake = 0;
-int accel = 0;
+int gas = 0;
 bool mix = false;
 int slope = 0; // -1 up, 0 flat, 1 down
 
@@ -116,14 +116,14 @@ int speed_req()
         // ACELERADOR
         else if (0 == strcmp("GAS: SET\n", request))
         {
-            accel = 1;
+            gas = 1;
             brake = 0;
             sprintf(answer, "GAS:  OK\n");
             requested_answered = true;
         }
         else if (0 == strcmp("GAS: CLR\n", request))
         {
-            accel = 0;
+            gas = 0;
             sprintf(answer, "GAS:  OK\n");
             requested_answered = true;
         }
@@ -131,7 +131,7 @@ int speed_req()
         else if (0 == strcmp("BRK: SET\n", request))
         {
             brake = 1;
-            accel = 0;
+            gas = 0;
             sprintf(answer, "BRK:  OK\n");
             requested_answered = true;
         }
@@ -172,7 +172,7 @@ int speed_req()
         }
 
         digitalWrite(11, mix);
-        digitalWrite(13, accel);
+        digitalWrite(13, gas);
         digitalWrite(12, brake);
     }
 
@@ -203,14 +203,16 @@ void physics()
     speed += (DELAY_MS * 0.25 / 1000) * slope;
 
     // calculo de velocidad (freno/acelerador)
-    if (accel) {
+    if (gas) {
         speed += (DELAY_MS * 0.5 / 1000);
     }
     if (brake) { // El freno frena velocidad positiva y negativa
-        if (speed > 0) {
+        if (speed > (DELAY_MS * 0.5 / 1000)) {
             speed -= (DELAY_MS * 0.5 / 1000);
-        } else {
+        } else if (speed < -(DELAY_MS * 0.5 / 1000)){
             speed += (DELAY_MS * 0.5 / 1000);
+        } else {
+            speed = 0;
         }
     }
 
