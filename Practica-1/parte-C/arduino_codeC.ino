@@ -23,7 +23,7 @@ int count = 0;
 
 int DELAY_MS = 200;
 bool brake = false;
-bool accel = false;
+bool gas = false;
 bool mix = false;
 int slope = 0; // -1 up, 0 flat, 1 down
 
@@ -31,6 +31,7 @@ double light = 0;
 bool lamp = false;
 
 long distance = 0;
+bool select = false;
 
 /**
  * MODO
@@ -127,7 +128,7 @@ int speed_req()
     // If there is a request not answered, check if this is the one
     if ((request_received) && (!requested_answered))
     {
-        Serial.println(request);
+        // Serial.println(request);
         if (0 == strcmp("SPD: REQ\n", request)) // velocidad
         {
             // send the answer for speed request
@@ -140,14 +141,14 @@ int speed_req()
         // ACELERADOR
         else if (0 == strcmp("GAS: SET\n", request))
         {
-            accel = true;
+            gas = true;
             brake = false;
             sprintf(answer, "GAS:  OK\n");
             requested_answered = true;
         }
         else if (0 == strcmp("GAS: CLR\n", request))
         {
-            accel = false;
+            gas = false;
             sprintf(answer, "GAS:  OK\n");
             requested_answered = true;
         }
@@ -155,7 +156,7 @@ int speed_req()
         else if (0 == strcmp("BRK: SET\n", request))
         {
             brake = true;
-            accel = false;
+            gas = false;
             sprintf(answer, "BRK:  OK\n");
             requested_answered = true;
         }
@@ -221,13 +222,25 @@ int speed_req()
         // MOVIMIENTO
         else if (0 == strcmp("STP: REQ\n", request))
         {
-            lamp = false;
-            sprintf(answer, "STP:  OK\n");
+            if (mode == 0) {
+                sprintf(answer, "STP:  GO\n");
+            } else if (mode == 1) {
+                sprintf(answer, "STP:  GO\n");
+            }
+            requested_answered = true;
+        }
+        // LEER DISTANCIA (modo acercamiento)
+        else if ( 
+            (0 == strcmp("DS:  REQ\n", request)) &&
+            (mode == 1)
+        )
+        {
+            sprintf(answer, "DS:%05d\n", distance);
             requested_answered = true;
         }
 
         digitalWrite(11, mix);
-        digitalWrite(13, accel);
+        digitalWrite(13, gas);
         digitalWrite(12, brake);
         digitalWrite(7, lamp);
     }
@@ -261,11 +274,27 @@ void physics()
         slope = 0;
     }
 
+    // M.R.U.A. para calcular distancia y velocidad
+
+    int initial_speed = speed;
+    
+    // aceleración pendiente + motor
+    int accel = 0.25 * slope;
+    if (gas) { 
+        accel += 0.5;
+    }
+    if (brake) { // El freno frena velocidad positiva y negativa
+        if (speed > 0) {
+            speed -= (DELAY_MS * 0.5 / 1000);
+        } else {
+            speed += (DELAY_MS * 0.5 / 1000);
+        }
+    }
+
     // calculo de velocidad (pendiente)
     speed += (DELAY_MS * 0.25 / 1000) * slope;
-
     // calculo de velocidad (freno/acelerador)
-    if (accel) {
+    if (gas) {
         speed += (DELAY_MS * 0.5 / 1000);
     }
     if (brake) { // El freno frena velocidad positiva y negativa
@@ -276,16 +305,28 @@ void physics()
         }
     }
 
-    // EN TEORÍA LA ENTRADA ANALOGICA ES DE 0 A 1023
-    // PERO EN EL SIMULADOR SOLO LLEGA HASTA 765
-    // SI EL PORCENTAJE NO VA BIEN, CAMBIAR DE 765 A 1024
-    light = map(analogRead(0), 0, 764, 0, 100);
+     // Calculo del brillo del led de velocidad
+    int bright;
+    if (speed <= 40){
+      bright = 0;
+    } else if (speed >= 70) {
+      bright = 255;  
+    } else {
+      bright = (speed - 40) * 255 / 30;
+    }
+
+    analogWrite(10, bright);
+
+    // Sensor de luz
+    light = map(analogRead(0), 0, 1023, 0, 100);
     if (light >= 100)
         light = 99;
     else if (light <= 0)
         light = 0;
 
-    if (mode == 0) {
+    switch (mode)
+    {
+    case 0: // MODO SELECCION DE DISTANCIA
         distance = map(analogRead(1), 0, 1023, 10000, 90000);
 
         int digit = (int) (distance/10000);
@@ -302,8 +343,26 @@ void physics()
             case 9: write7(1, 0, 0, 1); break;
             default: break;
         }
-    }
 
+        // validación de distancia
+        bool pulsed = digitalRead(7);
+        if ( pulsed ) {
+            select = true;
+        }
+        else if ( !pulsed && select ) { // switch de up a down
+            select = false;
+            next_mode();
+        } 
+        break;
+    case 1: // MODO DE ACERCAMIENTO AL DEPOSITO
+        // calculamos cuanto ha recorrido M.R.U.A
+        distance = distance + initial_speed*(DELAY_MS/1000) + 0.5*
+        break;
+    case 2: break;
+    case 3: break;
+    default:
+        break;
+    }
 }
 
 // --------------------------------------
@@ -321,10 +380,10 @@ void setup()
     pinMode(9, INPUT);   // PENDIENTE ARRIBA
     pinMode(8, INPUT);   // PENDIENTE ABAJO
     pinMode(7, OUTPUT);   // FOCOS
-    pinMode(2, OUTPUT);
-    pinMode(3, OUTPUT);
-    pinMode(4, OUTPUT);
-    pinMode(5, OUTPUT);
+    pinMode(2, OUTPUT); // 7seg
+    pinMode(3, OUTPUT); // 7seg
+    pinMode(4, OUTPUT); // 7seg
+    pinMode(5, OUTPUT); // 7seg
 }
 
 // --------------------------------------
