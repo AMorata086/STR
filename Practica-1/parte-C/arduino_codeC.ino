@@ -303,8 +303,6 @@ void physics()
             default: break;
         }
     }
-    // escribe en el display la distancia seleccionada en decenas de miles
-    //write_display((int) (distance/10000));
 
 }
 
