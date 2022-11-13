@@ -467,18 +467,19 @@ void *controller(void *arg)
             // calling task of speed
             if (task_speed() != 0)
                 fprintf(stderr, "Error in task_speed\n");
+            // calling task of slope
+            if (task_slope() != 0)
+                fprintf(stderr, "Error in task_slope\n");
+
+            break;
+        case 1:
+            /* tasks that execute every 10 seconds */
             // calling task of brake
             if (task_brake() != 0)
                 fprintf(stderr, "Error in task_brake\n");
             // calling task of gas
             if (task_gas() != 0)
                 fprintf(stderr, "Error in task_gas\n");
-            break;
-        case 1:
-            /* tasks that execute every 10 seconds */
-            // calling task of slope
-            if (task_slope() != 0)
-                fprintf(stderr, "Error in task_slope\n");
             // calling task of mixer
             if (task_mix() != 0)
                 fprintf(stderr, "Error in task_gas\n");

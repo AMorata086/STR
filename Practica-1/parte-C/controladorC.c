@@ -27,6 +27,8 @@
 //-------------------------------------
 #define MSG_LEN 9
 #define SLAVE_ADDR 0x8
+#define T_CYCLE 5
+#define N_CYCLES 2
 
 //-------------------------------------
 //-  Global Variables
@@ -37,7 +39,8 @@ int fd_serie = -1;
 time_t last_mixer_change;
 struct timespec t_cycle = {10, 0};
 int light;
-int state;
+int distance;
+int mode; // execution mode
 // group of binary variables defining the states
 int brake = 0;
 int gas = 0;
@@ -246,7 +249,6 @@ int task_brake_brake()
     }
 }
 
-
 //-------------------------------------
 //-  Function: task_gas_normal
 //-------------------------------------
@@ -334,7 +336,6 @@ int task_gas_brake()
         return 1;
     }
 }
-
 
 //-------------------------------------
 //-  Function: task_mix
@@ -540,8 +541,6 @@ int task_lamp_brake()
     memset(request, '\0', MSG_LEN + 1);
     memset(answer, '\0', MSG_LEN + 1);
 
- 
-
     strcpy(request, "LAM: SET\n");
 
 #if defined(ARDUINO)
@@ -577,8 +576,6 @@ int task_lamp_stop()
     // clear request and answer
     memset(request, '\0', MSG_LEN + 1);
     memset(answer, '\0', MSG_LEN + 1);
-
- 
 
     strcpy(request, "LAM: SET\n");
 
@@ -635,23 +632,22 @@ int task_distance()
 
     // display distance
     if (1 == sscanf(answer, "DS:%d\n", &distance))
-    {   
+    {
 
-        switch (state)
+        switch (mode)
         {
         case 0:
             if (distance < 11000 && distance > 0)
             {
-                state = 1; //we switch to break mode
+                mode = 1; // we switch to break mode
             }
             break;
-        
+
         case 1:
             if (distance <= 0 && speed <= 10)
             {
-                state = 2; //we switch to stop mode
+                mode = 2; // we switch to stop mode
                 distance = 0;
-                
             }
             break;
         }
@@ -686,20 +682,21 @@ int task_stop()
 #endif
 
     // display stop
-    if (0 == strcmp(answer_buf, "STP:  GO\n"))
+    if (0 == strcmp(answer, "STP:  GO\n"))
     {
         stop = 0;
-        state = 0; //we switch to normal mode
+        mode = 0; // we switch to normal mode
         displayStop(stop);
         return 0;
     }
-    else if (0 == strcmp(answer_buf, "STP:STOP\n"))
+    else if (0 == strcmp(answer, "STP:STOP\n"))
     {
         stop = 1;
         displayStop(stop);
         return 0;
     }
-    else{
+    else
+    {
 
         return 1;
     }
@@ -712,6 +709,7 @@ void *controller(void *arg)
 {
 
     struct timespec t_init, t_end, t_diff;
+    int cycle_counter;
 
     // Endless loop
     while (1)
@@ -719,21 +717,51 @@ void *controller(void *arg)
         if (clock_gettime(CLOCK_REALTIME, &t_init) < 0)
             fprintf(stderr, "Error while getting init time");
 
-        // calling task of speed
-        if (task_speed() != 0)
-            printf("Error in task_speed");
-        // calling task of slope
-        if (task_slope() != 0)
-            printf("Error in task_slope");
-        // calling task of brake
-        if (task_brake() != 0)
-            printf("Error in task_brake");
-        // calling task of gas
-        if (task_gas() != 0)
-            printf("Error in task_gas");
-        // calling task of mixer
-        if (task_mix() != 0)
-            printf("Error in task_gas");
+        switch (mode)
+        {
+        case 0: // normal mode
+            /* tasks that execute every 5 seconds */
+            // calling task of light sensor
+            if (task_light() != 0)
+                fprintf(stderr, "Error in task_light\n");
+            // calling task of lamp
+            if (task_lamp() != 0)
+                fprintf(stderr, "Error in task_lamp\n");
+            switch (cycle_counter)
+            {
+            case 0:
+                /* tasks that execute every 10 seconds */
+                // calling task of speed
+                if (task_speed() != 0)
+                    fprintf(stderr, "Error in task_speed\n");
+                // calling task of slope
+                if (task_slope() != 0)
+                    fprintf(stderr, "Error in task_slope\n");
+                // calling task of distance
+                if (task_distance() != 0)
+                    fprintf(stderr, "Error in task_distance\n");
+                break;
+            case 1:
+                /* tasks that execute every 10 seconds */
+                // calling task of brake
+                if (task_brake() != 0)
+                    fprintf(stderr, "Error in task_brake\n");
+                // calling task of gas
+                if (task_gas() != 0)
+                    fprintf(stderr, "Error in task_gas\n");
+                // calling task of mixer
+                if (task_mix() != 0)
+                    fprintf(stderr, "Error in task_gas\n");
+                break;
+            }
+            break;
+            // TODO
+        case 1: // braking mode
+
+            break;
+        }
+
+        cycle_counter = (cycle_counter + 1) % N_CYCLES;
 
         if (clock_gettime(CLOCK_REALTIME, &t_end) < 0)
             fprintf(stderr, "Error while getting end time");
