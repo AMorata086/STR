@@ -14,14 +14,14 @@
 // --------------------------------------
 // Global Variables
 // --------------------------------------
-double speed = 0; // 55.5
+double speed = 5.0; // 55.5
 bool request_received = false;
 bool requested_answered = false;
 char request[MESSAGE_SIZE + 1];
 char answer[MESSAGE_SIZE + 1];
 int count = 0;
 
-int DELAY_MS = 200;
+double DELAY_MS = 200.0;
 bool brake = false;
 bool gas = false;
 bool mix = false;
@@ -32,19 +32,15 @@ bool lamp = false;
 
 long distance = 0;
 bool select = false;
+int stop_blink = 0;
 
 /**
  * MODO
  * 0 - normal / seleccion de distancia
  * 1 - acercamiento al deposito
- * 2 - modo de parada
- * 3 - modo selección en parada
+ * 2 - modo de parada / lectura fin de parada
 */
 int mode = 0;
-
-void next_mode(){
-    mode = (mode + 1)%4;
-}
 
 // --------------------------------------
 // Function: comm_server
@@ -222,9 +218,9 @@ int speed_req()
         // MOVIMIENTO
         else if (0 == strcmp("STP: REQ\n", request))
         {
-            if (mode == 0) {
-                sprintf(answer, "STP:  GO\n");
-            } else if (mode == 1) {
+            if (mode == 2) {
+                sprintf(answer, "STP:STOP\n");
+            } else {
                 sprintf(answer, "STP:  GO\n");
             }
             requested_answered = true;
@@ -274,38 +270,42 @@ void physics()
         slope = 0;
     }
 
-    // M.R.U.A. para calcular distancia y velocidad
+    if (mode != 2){
+        // M.R.U.A. para calcular distancia y velocidad
+        double time = DELAY_MS/1000;
+        double initial_speed = speed;
+        
+        // aceleración pendiente + motor
+        double accel = 0.25 * slope;
+        if (gas) { 
+            accel += 0.5;
+        } else if (brake) { // El freno frena velocidad positiva y negativa
+            accel -= 0.5;
+        }
 
-    int initial_speed = speed;
-    
-    // aceleración pendiente + motor
-    int accel = 0.25 * slope;
-    if (gas) { 
-        accel += 0.5;
-    }
-    if (brake) { // El freno frena velocidad positiva y negativa
-        if (speed > 0) {
-            speed -= (DELAY_MS * 0.5 / 1000);
+        // nueva velocidad
+        if (brake && (abs(speed) < (accel*time))){
+            speed = 0;
+            time = -initial_speed/accel; // HA PARADO A 0, SE CALCULA EL TIEMPO (menos de 200ms)
         } else {
-            speed += (DELAY_MS * 0.5 / 1000);
+            speed += accel*time;
+        }
+
+        if (mode == 1) { // calculo de distancia
+            distance = distance - initial_speed*DELAY_MS/1000 + 0.5 * pow(time,2);
+
+            if (distance <= 0){
+                if (speed <= 10) {
+                    speed = 0;
+                    mode = 2; // frenado
+                } else {
+                    mode = 0; // modo anterior de selección
+                }
+            }
         }
     }
 
-    // calculo de velocidad (pendiente)
-    speed += (DELAY_MS * 0.25 / 1000) * slope;
-    // calculo de velocidad (freno/acelerador)
-    if (gas) {
-        speed += (DELAY_MS * 0.5 / 1000);
-    }
-    if (brake) { // El freno frena velocidad positiva y negativa
-        if (speed > 0) {
-            speed -= (DELAY_MS * 0.5 / 1000);
-        } else {
-            speed += (DELAY_MS * 0.5 / 1000);
-        }
-    }
-
-     // Calculo del brillo del led de velocidad
+    // Calculo del brillo del led de velocidad
     int bright;
     if (speed <= 40){
       bright = 0;
@@ -324,44 +324,47 @@ void physics()
     else if (light <= 0)
         light = 0;
 
-    switch (mode)
-    {
-    case 0: // MODO SELECCION DE DISTANCIA
+    if (mode == 0) { // MODO SELECCION DE DISTANCIA
         distance = map(analogRead(1), 0, 1023, 10000, 90000);
 
-        int digit = (int) (distance/10000);
-        switch (digit)
-        {
-            case 1: write7(0, 0, 0, 1); break;
-            case 2: write7(0, 0, 1, 0); break;
-            case 3: write7(0, 0, 1, 1); break;
-            case 4: write7(0, 1, 0, 0); break;
-            case 5: write7(0, 1, 0, 1); break;
-            case 6: write7(0, 1, 1, 0); break;
-            case 7: write7(0, 1, 1, 1); break;
-            case 8: write7(1, 0, 0, 0); break;
-            case 9: write7(1, 0, 0, 1); break;
-            default: break;
-        }
-
         // validación de distancia
-        bool pulsed = digitalRead(7);
+        bool pulsed = digitalRead(6);
         if ( pulsed ) {
             select = true;
         }
         else if ( !pulsed && select ) { // switch de up a down
             select = false;
-            next_mode();
+            mode = 1; // calculo de distancia
         } 
-        break;
-    case 1: // MODO DE ACERCAMIENTO AL DEPOSITO
-        // calculamos cuanto ha recorrido M.R.U.A
-        distance = distance + initial_speed*(DELAY_MS/1000) + 0.5*
-        break;
-    case 2: break;
-    case 3: break;
-    default:
-        break;
+    } else if (mode == 2) { // lectura de fin de parada
+        // validación de distancia
+        bool pulsed = digitalRead(6);
+        if ( pulsed ) {
+            select = true;
+        }
+        else if ( !pulsed && select ) { // switch de up a down
+            select = false;
+            mode = 0; // seleccion de distancia
+        } 
+
+        /* testing
+        stop_blink = (stop_blink + 1) % 8;
+        digitalWrite(13, (stop_blink >= 4));*/
+    }
+
+    int digit = (int) (distance/10000);
+    switch (digit)
+    {
+        case 1: write7(0, 0, 0, 1); break;
+        case 2: write7(0, 0, 1, 0); break;
+        case 3: write7(0, 0, 1, 1); break;
+        case 4: write7(0, 1, 0, 0); break;
+        case 5: write7(0, 1, 0, 1); break;
+        case 6: write7(0, 1, 1, 0); break;
+        case 7: write7(0, 1, 1, 1); break;
+        case 8: write7(1, 0, 0, 0); break;
+        case 9: write7(1, 0, 0, 1); break;
+        default: break;
     }
 }
 
@@ -384,6 +387,7 @@ void setup()
     pinMode(3, OUTPUT); // 7seg
     pinMode(4, OUTPUT); // 7seg
     pinMode(5, OUTPUT); // 7seg
+    pinMode(6, INPUT); // BOTON SELECCION
 }
 
 // --------------------------------------
