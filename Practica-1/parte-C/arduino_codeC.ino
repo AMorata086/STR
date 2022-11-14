@@ -30,7 +30,7 @@ int slope = 0; // -1 up, 0 flat, 1 down
 double light = 0;
 bool lamp = false;
 
-long distance = 0;
+long int distance = 0;
 bool select = false;
 int stop_blink = 0;
 
@@ -233,7 +233,7 @@ int speed_req()
             (mode == 1)
         )
         {
-            sprintf(answer, "DS:%05d\n", distance);
+            sprintf(answer, "DS:%05d\n", (int) distance);
             requested_answered = true;
         }
 
@@ -294,7 +294,7 @@ void physics()
         }
 
         if (mode == 1) { // calculo de distancia
-            distance = distance - initial_speed*DELAY_MS/1000 + 0.5 * pow(time,2);
+            distance = distance - (initial_speed*DELAY_MS/1000 + 0.5 * pow(time,2));
 
             if (distance <= 0){
                 if (speed <= 10) {
