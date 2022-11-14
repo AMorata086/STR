@@ -209,10 +209,10 @@ int task_brake_normal()
     {
         displayBrake(brake);
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -257,10 +257,10 @@ int task_brake_braking()
     {
         displayBrake(brake);
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -337,10 +337,10 @@ int task_gas_normal()
     {
         displayGas(gas);
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -385,10 +385,10 @@ int task_gas_braking()
     {
         displayGas(gas);
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -439,7 +439,7 @@ int task_mix()
     time_t current_time = time(NULL);
 
     double elapsed = difftime(current_time, last_mixer_change);
-    if (elapsed > 30.0 && elapsed < 60)
+    if (elapsed > 30.0)
     {
         if (mixer == 0)
         {
@@ -452,10 +452,12 @@ int task_mix()
             mixer = 0;
         }
     }
+    /*
     else if (elapsed >= 60 || elapsed < 0)
     {
         mode = 3;
     }
+    */
 
 #if defined(ARDUINO)
     // use UART serial module
@@ -472,10 +474,10 @@ int task_mix()
         displayMix(mixer);
         last_mixer_change = current_time;
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -552,18 +554,18 @@ int task_light()
     {
         if (light < 50)
         {
-            dark = 0;
+            dark = 1;
         }
         else
         {
-            dark = 1;
+            dark = 0;
         }
         displayLightSensor(dark);
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -598,14 +600,14 @@ int task_lamp_normal()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM:  OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(dark);
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -634,14 +636,14 @@ int task_lamp_braking()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM:  OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -670,14 +672,14 @@ int task_lamp_stop()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM:  OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -706,7 +708,7 @@ int task_lamp_emergency()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM:  OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
     }
@@ -805,10 +807,10 @@ int task_stop()
         stop = 1;
         displayStop(stop);
     }
-    else if (0 == strcmp(answer, "MSG: ERR\n"))
-    {
-        mode = 3;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
