@@ -30,7 +30,7 @@
 #define T_CYCLE 5
 #define N_CYCLES_NORMAL 2
 #define N_CYCLES_BRAKING 2
-#define N_CYCLES_STOP 1
+#define N_CYCLES_STOP 2
 
 //-------------------------------------
 //-  Global Variables
@@ -39,7 +39,7 @@ float speed = 0.0;
 struct timespec time_msg = {0, 400000000};
 int fd_serie = -1;
 time_t last_mixer_change;
-struct timespec t_cycle = {10, 0};
+struct timespec t_cycle = {T_CYCLE, 0};
 int light;
 int distance;
 int mode; // execution mode
@@ -208,7 +208,7 @@ int task_brake_normal()
 }
 
 //-------------------------------------
-//-  Function: task_brake_brake
+//-  Function: task_brake_braking
 //-------------------------------------
 int task_brake_braking()
 {
@@ -296,7 +296,7 @@ int task_gas_normal()
 }
 
 //-------------------------------------
-//-  Function: task_gas_brake
+//-  Function: task_gas_braking
 //-------------------------------------
 int task_gas_braking()
 {
@@ -761,7 +761,6 @@ void *controller(void *arg)
                 break;
             }
             break;
-            // TODO
         case 1: // braking mode
             /* tasks that execute every 5 seconds */
             // calling task of speed
