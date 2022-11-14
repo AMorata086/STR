@@ -86,7 +86,17 @@ int comm_server()
 
         // Store the character
         request[count] = car_aux;
-
+        
+        // Serial.println(car_aux);
+        // Serial.println(count);
+        // If the last character is an enter finish
+        if (request[count] == '\n') {
+            request[count] = car_aux;
+            request_received = true;
+            break;
+        }
+        
+        /*
         // Serial.println(car_aux);
         // Serial.println(count);
         // If the last character is an enter or
@@ -101,19 +111,11 @@ int comm_server()
             request[count + 1 ] = '\n';
             request_received = true;
             break;
-        }
-        /*
-        if ((request[count] == '\n') || (count == 7))
-        {
-            request[count] = car_aux;
-            request[count + 1] = '\n';
-            request_received = true;
-            break;
         }*/
 
         count++; // Increment the count
     }
-    while(Serial.available()){Serial.read();}
+    //while(Serial.available()){Serial.read();}
 }
 
 // --------------------------------------
@@ -395,8 +397,10 @@ void setup()
 // --------------------------------------
 void loop()
 {
+    unsigned long start = millis();
     physics();
     comm_server();
     speed_req();
-    delay(DELAY_MS);
+    unsigned long elapsed = millis() - start;
+    delay(DELAY_MS - elapsed);
 }

@@ -276,8 +276,10 @@ void setup()
 // --------------------------------------
 void loop()
 {
+    unsigned long start = millis();
     physics();
     comm_server();
     speed_req();
-    delay(DELAY_MS);
+    unsigned long elapsed = millis() - start;
+    delay(DELAY_MS - elapsed);
 }
