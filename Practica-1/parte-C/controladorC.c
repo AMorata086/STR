@@ -729,8 +729,8 @@ void *controller(void *arg)
             if (task_light() != 0)
                 fprintf(stderr, "Error in task_light\n");
             // calling task of lamp
-            if (task_lamp() != 0)
-                fprintf(stderr, "Error in task_lamp\n");
+            if (task_lamp_normal() != 0)
+                fprintf(stderr, "Error in task_lamp_normal\n");
             switch (cycle_counter_normal)
             {
             case 0:
@@ -749,10 +749,10 @@ void *controller(void *arg)
             case 1:
                 /* tasks that execute every 10 seconds */
                 // calling task of brake
-                if (task_brake() != 0)
+                if (task_brake_normal() != 0)
                     fprintf(stderr, "Error in task_brake\n");
                 // calling task of gas
-                if (task_gas() != 0)
+                if (task_gas_normal() != 0)
                     fprintf(stderr, "Error in task_gas\n");
                 // calling task of mixer
                 if (task_mix() != 0)
