@@ -27,6 +27,10 @@
 //-------------------------------------
 #define MSG_LEN 9
 #define SLAVE_ADDR 0x8
+#define T_CYCLE 5
+#define N_CYCLES_NORMAL 2
+#define N_CYCLES_BRAKING 2
+#define N_CYCLES_STOP 2
 
 //-------------------------------------
 //-  Global Variables
@@ -35,9 +39,10 @@ float speed = 0.0;
 struct timespec time_msg = {0, 400000000};
 int fd_serie = -1;
 time_t last_mixer_change;
-struct timespec t_cycle = {10, 0};
+struct timespec t_cycle = {T_CYCLE, 0};
 int light;
-int state;
+int distance;
+int mode; // execution mode
 // group of binary variables defining the states
 int brake = 0;
 int gas = 0;
@@ -194,18 +199,14 @@ int task_brake_normal()
     if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
-//-  Function: task_brake_brake
+//-  Function: task_brake_braking
 //-------------------------------------
-int task_brake_brake()
+int task_brake_braking()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -238,14 +239,9 @@ int task_brake_brake()
     if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
-
 
 //-------------------------------------
 //-  Function: task_gas_normal
@@ -283,18 +279,14 @@ int task_gas_normal()
     if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
-//-  Function: task_gas_brake
+//-  Function: task_gas_braking
 //-------------------------------------
-int task_gas_brake()
+int task_gas_braking()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -327,14 +319,9 @@ int task_gas_brake()
     if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
-
 
 //-------------------------------------
 //-  Function: task_mix
@@ -379,12 +366,8 @@ int task_mix()
     {
         displayMix(mixer);
         last_mixer_change = current_time;
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -457,7 +440,7 @@ int task_light()
 #endif
 
     // display light
-    char light_val[2];
+    char light_val[3];
     if (light < 10)
     {
         sprintf(light_val, "0%d", light);
@@ -467,7 +450,7 @@ int task_light()
         sprintf(light_val, "%d", light);
     }
 
-    if (1 == sscanf(answer, "LIT: %s%%\n", &light_val))
+    if (1 == sscanf(answer, "LIT: %s%%\n", light_val))
     {
         if (light < 50)
         {
@@ -520,18 +503,14 @@ int task_lamp_normal()
     if (strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(dark);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
 //-  Function: task_lamp_brake
 //-------------------------------------
-int task_lamp_brake()
+int task_lamp_braking()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -539,8 +518,6 @@ int task_lamp_brake()
     // clear request and answer
     memset(request, '\0', MSG_LEN + 1);
     memset(answer, '\0', MSG_LEN + 1);
-
- 
 
     strcpy(request, "LAM: SET\n");
 
@@ -558,12 +535,8 @@ int task_lamp_brake()
     if (strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -578,8 +551,6 @@ int task_lamp_stop()
     memset(request, '\0', MSG_LEN + 1);
     memset(answer, '\0', MSG_LEN + 1);
 
- 
-
     strcpy(request, "LAM: SET\n");
 
 #if defined(ARDUINO)
@@ -596,12 +567,8 @@ int task_lamp_stop()
     if (strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -635,23 +602,22 @@ int task_distance()
 
     // display distance
     if (1 == sscanf(answer, "DS:%d\n", &distance))
-    {   
+    {
 
-        switch (state)
+        switch (mode)
         {
         case 0:
             if (distance < 11000 && distance > 0)
             {
-                state = 1; //we switch to break mode
+                mode = 1; // we switch to break mode
             }
             break;
-        
+
         case 1:
             if (distance <= 0 && speed <= 10)
             {
-                state = 2; //we switch to stop mode
+                mode = 2; // we switch to stop mode
                 distance = 0;
-                
             }
             break;
         }
@@ -686,20 +652,21 @@ int task_stop()
 #endif
 
     // display stop
-    if (0 == strcmp(answer_buf, "STP:  GO\n"))
+    if (0 == strcmp(answer, "STP:  GO\n"))
     {
         stop = 0;
-        state = 0; //we switch to normal mode
+        mode = 0; // we switch to normal mode
         displayStop(stop);
         return 0;
     }
-    else if (0 == strcmp(answer_buf, "STP:STOP\n"))
+    else if (0 == strcmp(answer, "STP:STOP\n"))
     {
         stop = 1;
         displayStop(stop);
         return 0;
     }
-    else{
+    else
+    {
 
         return 1;
     }
@@ -712,6 +679,9 @@ void *controller(void *arg)
 {
 
     struct timespec t_init, t_end, t_diff;
+    int cycle_counter_normal = 0;
+    int cycle_counter_braking = 0;
+    int cycle_counter_stop = 0;
 
     // Endless loop
     while (1)
@@ -719,21 +689,93 @@ void *controller(void *arg)
         if (clock_gettime(CLOCK_REALTIME, &t_init) < 0)
             fprintf(stderr, "Error while getting init time");
 
-        // calling task of speed
-        if (task_speed() != 0)
-            printf("Error in task_speed");
-        // calling task of slope
-        if (task_slope() != 0)
-            printf("Error in task_slope");
-        // calling task of brake
-        if (task_brake() != 0)
-            printf("Error in task_brake");
-        // calling task of gas
-        if (task_gas() != 0)
-            printf("Error in task_gas");
-        // calling task of mixer
-        if (task_mix() != 0)
-            printf("Error in task_gas");
+        switch (mode)
+        {
+        case 0: // normal mode
+            /* tasks that execute every 5 seconds */
+            // calling task of light sensor
+            if (task_light() != 0)
+                fprintf(stderr, "Error in task_light\n");
+            // calling task of lamp
+            if (task_lamp_normal() != 0)
+                fprintf(stderr, "Error in task_lamp_normal\n");
+            switch (cycle_counter_normal)
+            {
+            case 0:
+                /* tasks that execute every 10 seconds */
+                // calling task of speed
+                if (task_speed() != 0)
+                    fprintf(stderr, "Error in task_speed\n");
+                // calling task of slope
+                if (task_slope() != 0)
+                    fprintf(stderr, "Error in task_slope\n");
+                // calling task of distance
+                if (task_distance() != 0)
+                    fprintf(stderr, "Error in task_distance\n");
+                cycle_counter_normal = (cycle_counter_normal + 1) % N_CYCLES_NORMAL;
+                break;
+            case 1:
+                /* tasks that execute every 10 seconds */
+                // calling task of brake
+                if (task_brake_normal() != 0)
+                    fprintf(stderr, "Error in task_brake\n");
+                // calling task of gas
+                if (task_gas_normal() != 0)
+                    fprintf(stderr, "Error in task_gas\n");
+                // calling task of mixer
+                if (task_mix() != 0)
+                    fprintf(stderr, "Error in task_gas\n");
+                cycle_counter_normal = (cycle_counter_normal + 1) % N_CYCLES_NORMAL;
+                break;
+            }
+            break;
+        case 1: // braking mode
+            /* tasks that execute every 5 seconds */
+            // calling task of speed
+            if (task_speed() != 0)
+                fprintf(stderr, "Error in task_speed\n");
+            // calling task of brake
+            if (task_brake_braking() != 0)
+                fprintf(stderr, "Error in task_brake\n");
+            // calling task of gas
+            if (task_gas_braking() != 0)
+                fprintf(stderr, "Error in task_gas\n");
+            switch (cycle_counter_braking)
+            {
+            case 0:
+                if (task_distance() != 0)
+                    fprintf(stderr, "Error in task_distance\n");
+                if (task_slope() != 0)
+                    fprintf(stderr, "Error in task_slope\n");
+                cycle_counter_braking = (cycle_counter_braking + 1) % N_CYCLES_BRAKING;
+                break;
+            case 1:
+                if (task_lamp_braking() != 0)
+                    fprintf(stderr, "Error in task_lamp_braking\n");
+                if (task_mix() != 0)
+                    fprintf(stderr, "Error in task_mix\n");
+                cycle_counter_braking = (cycle_counter_braking + 1) % N_CYCLES_BRAKING;
+                break;
+            }
+            break;
+        case 2: // stop mode
+            /* tasks that execute every 5 seconds */
+            if (task_stop() != 0)
+                fprintf(stderr, "Error in task_stop\n");
+            switch (cycle_counter_stop)
+            {
+            case 0:
+                if (task_mix() != 0)
+                    fprintf(stderr, "Error in task_mix\n");
+                cycle_counter_stop = (cycle_counter_stop + 1) % N_CYCLES_STOP;
+                break;
+            case 1:
+                if (task_lamp_stop() != 0)
+                    fprintf(stderr, "Error in task_lamp_stop\n");
+                cycle_counter_stop = (cycle_counter_stop + 1) % N_CYCLES_STOP;
+                break;
+            }
+        }
 
         if (clock_gettime(CLOCK_REALTIME, &t_end) < 0)
             fprintf(stderr, "Error while getting end time");

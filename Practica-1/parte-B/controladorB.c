@@ -194,12 +194,8 @@ int task_brake()
     if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -238,12 +234,8 @@ int task_gas()
     if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -289,12 +281,8 @@ int task_mix()
     {
         displayMix(mixer);
         last_mixer_change = current_time;
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -430,12 +418,8 @@ int task_lamp()
     if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(dark);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -467,18 +451,19 @@ void *controller(void *arg)
             // calling task of speed
             if (task_speed() != 0)
                 fprintf(stderr, "Error in task_speed\n");
+            // calling task of slope
+            if (task_slope() != 0)
+                fprintf(stderr, "Error in task_slope\n");
+
+            break;
+        case 1:
+            /* tasks that execute every 10 seconds */
             // calling task of brake
             if (task_brake() != 0)
                 fprintf(stderr, "Error in task_brake\n");
             // calling task of gas
             if (task_gas() != 0)
                 fprintf(stderr, "Error in task_gas\n");
-            break;
-        case 1:
-            /* tasks that execute every 10 seconds */
-            // calling task of slope
-            if (task_slope() != 0)
-                fprintf(stderr, "Error in task_slope\n");
             // calling task of mixer
             if (task_mix() != 0)
                 fprintf(stderr, "Error in task_gas\n");
