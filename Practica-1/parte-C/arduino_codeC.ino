@@ -32,7 +32,6 @@ bool lamp = false;
 
 long int distance = 0;
 bool select = false;
-int stop_blink = 0;
 
 /**
  * MODO
