@@ -354,26 +354,15 @@ int task_light()
     simulator(request, answer);
 #endif
 
-    // display light
-    char light_val[3];
-    if (light < 10)
-    {
-        sprintf(light_val, "0%d", light);
-    }
-    else
-    {
-        sprintf(light_val, "%d", light);
-    }
-
-    if (1 == sscanf(answer, "LIT: %s%%\n", light_val))
+    if (1 == sscanf(answer, "LIT:%d\n", &light))
     {
         if (light < 50)
         {
-            dark = 0;
+            dark = 1;
         }
         else
         {
-            dark = 1;
+            dark = 0;
         }
         displayLightSensor(dark);
         return 0;
