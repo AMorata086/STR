@@ -28,7 +28,9 @@
 #define MSG_LEN 9
 #define SLAVE_ADDR 0x8
 #define T_CYCLE 5
-#define N_CYCLES 2
+#define N_CYCLES_NORMAL 2
+#define N_CYCLES_BRAKING 2
+#define N_CYCLES_STOP 1
 
 //-------------------------------------
 //-  Global Variables
@@ -208,7 +210,7 @@ int task_brake_normal()
 //-------------------------------------
 //-  Function: task_brake_brake
 //-------------------------------------
-int task_brake_brake()
+int task_brake_braking()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -296,7 +298,7 @@ int task_gas_normal()
 //-------------------------------------
 //-  Function: task_gas_brake
 //-------------------------------------
-int task_gas_brake()
+int task_gas_braking()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -532,7 +534,7 @@ int task_lamp_normal()
 //-------------------------------------
 //-  Function: task_lamp_brake
 //-------------------------------------
-int task_lamp_brake()
+int task_lamp_braking()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -709,7 +711,9 @@ void *controller(void *arg)
 {
 
     struct timespec t_init, t_end, t_diff;
-    int cycle_counter;
+    int cycle_counter_normal = 0;
+    int cycle_counter_braking = 0;
+    int cycle_counter_stop = 0;
 
     // Endless loop
     while (1)
@@ -727,7 +731,7 @@ void *controller(void *arg)
             // calling task of lamp
             if (task_lamp() != 0)
                 fprintf(stderr, "Error in task_lamp\n");
-            switch (cycle_counter)
+            switch (cycle_counter_normal)
             {
             case 0:
                 /* tasks that execute every 10 seconds */
@@ -740,6 +744,7 @@ void *controller(void *arg)
                 // calling task of distance
                 if (task_distance() != 0)
                     fprintf(stderr, "Error in task_distance\n");
+                cycle_counter_normal = (cycle_counter_normal + 1) % N_CYCLES_NORMAL;
                 break;
             case 1:
                 /* tasks that execute every 10 seconds */
@@ -752,16 +757,58 @@ void *controller(void *arg)
                 // calling task of mixer
                 if (task_mix() != 0)
                     fprintf(stderr, "Error in task_gas\n");
+                cycle_counter_normal = (cycle_counter_normal + 1) % N_CYCLES_NORMAL;
                 break;
             }
             break;
             // TODO
         case 1: // braking mode
-
+            /* tasks that execute every 5 seconds */
+            // calling task of speed
+            if (task_speed() != 0)
+                fprintf(stderr, "Error in task_speed\n");
+            // calling task of brake
+            if (task_brake_braking() != 0)
+                fprintf(stderr, "Error in task_brake\n");
+            // calling task of gas
+            if (task_gas_braking() != 0)
+                fprintf(stderr, "Error in task_gas\n");
+            switch (cycle_counter_braking)
+            {
+            case 0:
+                if (task_distance() != 0)
+                    fprintf(stderr, "Error in task_distance\n");
+                if (task_slope() != 0)
+                    fprintf(stderr, "Error in task_slope\n");
+                cycle_counter_braking = (cycle_counter_braking + 1) % N_CYCLES_BRAKING;
+                break;
+            case 1:
+                if (task_lamp_braking() != 0)
+                    fprintf(stderr, "Error in task_lamp_braking\n");
+                if (task_mix() != 0)
+                    fprintf(stderr, "Error in task_mix\n");
+                cycle_counter_braking = (cycle_counter_braking + 1) % N_CYCLES_BRAKING;
+                break;
+            }
             break;
+        case 2: // stop mode
+            /* tasks that execute every 5 seconds */
+            if (task_stop() != 0)
+                fprintf(stderr, "Error in task_stop\n");
+            switch (cycle_counter_stop)
+            {
+            case 0:
+                if (task_mix() != 0)
+                    fprintf(stderr, "Error in task_mix\n");
+                cycle_counter_stop = (cycle_counter_stop + 1) % N_CYCLES_STOP;
+                break;
+            case 1:
+                if (task_lamp_stop() != 0)
+                    fprintf(stderr, "Error in task_lamp_stop\n");
+                cycle_counter_stop = (cycle_counter_stop + 1) % N_CYCLES_STOP;
+                break;
+            }
         }
-
-        cycle_counter = (cycle_counter + 1) % N_CYCLES;
 
         if (clock_gettime(CLOCK_REALTIME, &t_end) < 0)
             fprintf(stderr, "Error while getting end time");
