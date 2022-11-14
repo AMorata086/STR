@@ -199,12 +199,8 @@ int task_brake_normal()
     if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -243,12 +239,8 @@ int task_brake_braking()
     if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -287,12 +279,8 @@ int task_gas_normal()
     if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -331,12 +319,8 @@ int task_gas_braking()
     if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -382,12 +366,8 @@ int task_mix()
     {
         displayMix(mixer);
         last_mixer_change = current_time;
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -460,7 +440,7 @@ int task_light()
 #endif
 
     // display light
-    char light_val[2];
+    char light_val[3];
     if (light < 10)
     {
         sprintf(light_val, "0%d", light);
@@ -470,7 +450,7 @@ int task_light()
         sprintf(light_val, "%d", light);
     }
 
-    if (1 == sscanf(answer, "LIT: %s%%\n", &light_val))
+    if (1 == sscanf(answer, "LIT: %s%%\n", light_val))
     {
         if (light < 50)
         {
@@ -523,12 +503,8 @@ int task_lamp_normal()
     if (strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(dark);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -559,12 +535,8 @@ int task_lamp_braking()
     if (strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -595,12 +567,8 @@ int task_lamp_stop()
     if (strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------

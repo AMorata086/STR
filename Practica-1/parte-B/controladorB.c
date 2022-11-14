@@ -194,12 +194,8 @@ int task_brake()
     if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -238,12 +234,8 @@ int task_gas()
     if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -289,12 +281,8 @@ int task_mix()
     {
         displayMix(mixer);
         last_mixer_change = current_time;
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -430,12 +418,8 @@ int task_lamp()
     if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(dark);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------

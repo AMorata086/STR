@@ -461,13 +461,13 @@ int task_mix()
     {
         displayMix(mixer);
         last_mixer_change = current_time;
-        return 0;
     }
     else
     {
         mode = 3;
         return 1;
     }
+    return 0;
 }
 
 //-------------------------------------
@@ -540,7 +540,7 @@ int task_light()
 #endif
 
     // display light
-    char light_val[2];
+    char light_val[3];
     if (light < 10)
     {
         sprintf(light_val, "0%d", light);
@@ -550,7 +550,7 @@ int task_light()
         sprintf(light_val, "%d", light);
     }
 
-    if (1 == sscanf(answer, "LIT: %s%%\n", &light_val))
+    if (1 == sscanf(answer, "LIT: %s%%\n", light_val))
     {
         if (light < 50)
         {
@@ -715,12 +715,8 @@ int task_lamp_emergency()
     if (strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
