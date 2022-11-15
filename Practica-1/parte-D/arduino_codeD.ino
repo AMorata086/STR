@@ -306,7 +306,7 @@ void physics()
         }
 
         if (mode == 1) { // calculo de distancia
-            Serial.print(distance); Serial.print(' --- '); Serial.println(); 
+            //Serial.print(distance); Serial.print(' --- '); Serial.println(); 
             distance = distance - initial_speed*DELAY_MS/1000 + 0.5 * pow(time,2);
 
             if (distance <= 0){
