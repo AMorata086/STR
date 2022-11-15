@@ -342,6 +342,7 @@ int task_slope()
 //-------------------------------------
 void *controller(void *arg)
 {
+    sleep(2);
 
     struct timespec t_init, t_end, t_diff;
 
