@@ -43,7 +43,7 @@ time_t last_mixer_change;
 struct timespec t_cycle = {T_CYCLE, 0};
 int light;
 int distance;
-int mode; // execution mode
+int mode = 0; // execution mode
 // group of binary variables defining the states
 int brake = 0;
 int gas = 0;
@@ -162,6 +162,10 @@ int task_speed()
     {
         displaySpeed(speed);
     }
+    else
+    {
+        mode = 3;
+    }
     return 0;
 }
 //-------------------------------------
@@ -176,15 +180,19 @@ int task_brake_normal()
     memset(request, '\0', MSG_LEN + 1);
     memset(answer, '\0', MSG_LEN + 1);
 
-    if (speed <= 55.0)
+    if (speed <= 55.0 && speed >= 0)
     {
         strcpy(request, "BRK: CLR\n");
         brake = 0;
     }
-    else
+    else if (speed > 55.0 && speed <= 70.0)
     {
         strcpy(request, "BRK: SET\n");
         brake = 1;
+    }
+    else
+    {
+        mode = 3;
     }
 
 #if defined(ARDUINO)
@@ -200,13 +208,12 @@ int task_brake_normal()
     if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
+    return 0;
 }
 
 //-------------------------------------
@@ -221,15 +228,19 @@ int task_brake_braking()
     memset(request, '\0', MSG_LEN + 1);
     memset(answer, '\0', MSG_LEN + 1);
 
-    if (speed <= 2.5)
+    if (speed <= 2.5 && speed >= 0)
     {
         strcpy(request, "BRK: CLR\n");
         brake = 0;
     }
-    else
+    else if (speed > 2.5)
     {
         strcpy(request, "BRK: SET\n");
         brake = 1;
+    }
+    else
+    {
+        mode = 3;
     }
 
 #if defined(ARDUINO)
@@ -245,13 +256,12 @@ int task_brake_braking()
     if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
+    return 0;
 }
 
 //-------------------------------------
@@ -282,13 +292,8 @@ int task_brake_emergency()
     if (0 == strcmp(answer, "BRK:  OK\n"))
     {
         displayBrake(brake);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -303,15 +308,19 @@ int task_gas_normal()
     memset(request, '\0', MSG_LEN + 1);
     memset(answer, '\0', MSG_LEN + 1);
 
-    if (speed <= 55.0)
+    if (speed >= 0 && speed <= 55.0)
     {
         strcpy(request, "GAS: SET\n");
         gas = 1;
     }
-    else
+    else if (speed > 55.0 && speed <= 70.0)
     {
         strcpy(request, "GAS: CLR\n");
         gas = 0;
+    }
+    else
+    {
+        mode = 3;
     }
 
 #if defined(ARDUINO)
@@ -327,13 +336,12 @@ int task_gas_normal()
     if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
+    return 0;
 }
 
 //-------------------------------------
@@ -348,15 +356,19 @@ int task_gas_braking()
     memset(request, '\0', MSG_LEN + 1);
     memset(answer, '\0', MSG_LEN + 1);
 
-    if (speed <= 2.5)
+    if (speed >= 0 && speed <= 2.5)
     {
         strcpy(request, "GAS: SET\n");
         gas = 1;
     }
-    else
+    else if (speed > 2.5)
     {
         strcpy(request, "GAS: CLR\n");
         gas = 0;
+    }
+    else
+    {
+        mode = 3;
     }
 
 #if defined(ARDUINO)
@@ -372,13 +384,12 @@ int task_gas_braking()
     if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
+    return 0;
 }
 
 //-------------------------------------
@@ -409,13 +420,8 @@ int task_gas_emergency()
     if (0 == strcmp(answer, "GAS:  OK\n"))
     {
         displayGas(gas);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -446,6 +452,16 @@ int task_mix()
             mixer = 0;
         }
     }
+    else
+    {
+        return 0;
+    }
+    /*
+    else if (elapsed >= 60 || elapsed < 0)
+    {
+        mode = 3;
+    }
+    */
 
 #if defined(ARDUINO)
     // use UART serial module
@@ -462,11 +478,10 @@ int task_mix()
         displayMix(mixer);
         last_mixer_change = current_time;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
     return 0;
 }
 
@@ -539,35 +554,23 @@ int task_light()
     simulator(request, answer);
 #endif
 
-    // display light
-    char light_val[3];
-    if (light < 10)
-    {
-        sprintf(light_val, "0%d", light);
-    }
-    else
-    {
-        sprintf(light_val, "%d", light);
-    }
-
-    if (1 == sscanf(answer, "LIT: %s%%\n", light_val))
+    if (1 == sscanf(answer, "LIT:%d\n", &light))
     {
         if (light < 50)
         {
-            dark = 0;
+            dark = 1;
         }
         else
         {
-            dark = 1;
+            dark = 0;
         }
         displayLightSensor(dark);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
+    return 0;
 }
 
 //-------------------------------------
@@ -601,22 +604,21 @@ int task_lamp_normal()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM:  OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(dark);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
+    return 0;
 }
 
 //-------------------------------------
-//-  Function: task_lamp_brake
+//-  Function: task_lamp_braking
 //-------------------------------------
-int task_lamp_brake()
+int task_lamp_braking()
 {
     char request[MSG_LEN + 1];
     char answer[MSG_LEN + 1];
@@ -638,16 +640,15 @@ int task_lamp_brake()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM:  OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
+    return 0;
 }
 
 //-------------------------------------
@@ -675,16 +676,15 @@ int task_lamp_stop()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM:  OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
+    return 0;
 }
 
 //-------------------------------------
@@ -712,7 +712,7 @@ int task_lamp_emergency()
 #endif
 
     // display lamp
-    if (strcmp(answer, "LAM:  OK\n"))
+    if (0 == strcmp(answer, "LAM:  OK\n"))
     {
         displayLamps(1);
     }
@@ -805,19 +805,17 @@ int task_stop()
         stop = 0;
         mode = 0; // we switch to normal mode
         displayStop(stop);
-        return 0;
     }
     else if (0 == strcmp(answer, "STP:STOP\n"))
     {
         stop = 1;
         displayStop(stop);
-        return 0;
     }
-    else
-    {
-        mode = 3;
-        return 1;
-    }
+    // else if (0 == strcmp(answer, "MSG: ERR\n"))
+    // {
+    //     mode = 3;
+    // }
+    return 0;
 }
 
 //-------------------------------------
@@ -849,12 +847,8 @@ int task_emergency()
     if (0 == strcmp(answer, "ERR:  OK\n"))
     {
         mode = 3;
-        return 0;
     }
-    else
-    {
-        return 1;
-    }
+    return 0;
 }
 
 //-------------------------------------
@@ -965,6 +959,7 @@ void *controller(void *arg)
                 cycle_counter_stop = (cycle_counter_stop + 1) % N_CYCLES_STOP;
                 break;
             }
+            break;
         case 3: // emergency mode
             /* tasks that execute every 5 seconds */
             if (task_lamp_emergency() != 0)
