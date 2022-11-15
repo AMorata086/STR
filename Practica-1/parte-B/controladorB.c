@@ -266,6 +266,10 @@ int task_mix()
             mixer = 0;
         }
     }
+    else
+    {
+        return 0;
+    }
 
 #if defined(ARDUINO)
     // use UART serial module

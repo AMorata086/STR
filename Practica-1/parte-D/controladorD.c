@@ -452,6 +452,10 @@ int task_mix()
             mixer = 0;
         }
     }
+    else
+    {
+        return 0;
+    }
     /*
     else if (elapsed >= 60 || elapsed < 0)
     {
