@@ -14,7 +14,7 @@
 // --------------------------------------
 // Global Variables
 // --------------------------------------
-double speed = 0; // 55.5
+double speed = 55.5; // 55.5
 bool request_received = false;
 bool requested_answered = false;
 char request[MESSAGE_SIZE + 1];
