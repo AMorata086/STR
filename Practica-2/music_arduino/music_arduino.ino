@@ -83,7 +83,7 @@ void setup ()
 void loop ()
 {
     unsigned long timeDiff;
-
+    muteLed();
     play_bit();
     timeDiff = SAMPLE_TIME - (micros() - timeOrig);
     timeOrig = timeOrig + SAMPLE_TIME;
