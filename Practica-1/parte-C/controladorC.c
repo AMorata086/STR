@@ -670,6 +670,7 @@ int task_stop()
 //-------------------------------------
 void *controller(void *arg)
 {
+    sleep(2);
 
     struct timespec t_init, t_end, t_diff;
     int cycle_counter_normal = 0;
