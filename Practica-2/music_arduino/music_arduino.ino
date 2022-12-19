@@ -9,8 +9,10 @@
 // COMMENT THIS LINE TO EXECUTE WITH THE PC
 #define TEST_MODE 1
 
-#define SAMPLE_TIME 250 
-#define SOUND_PIN  11
+#define SAMPLE_TIME 250
+#define BUTTON_PIN 7
+#define SOUND_PIN 11
+#define LED_MUTE_PIN 13
 #define BUF_SIZE 256
 
 /**********************************************************
@@ -24,6 +26,22 @@ int pulsed = false;
 int ciclo_led = 0;
 
 /**********************************************************
+ * Function: setup
+ *********************************************************/
+void setup()
+{
+  // Initialize serial communications
+  Serial.begin(115200);
+
+  pinMode(SOUND_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT);
+  pinMode(SOUND_PIN, OUTPUT);
+  pinMode(LED_MUTE_PIN, OUTPUT);
+  memset(buffer, 0, BUF_SIZE);
+  timeOrig = micros();
+}
+
+/**********************************************************
  * Function: play_bit
  *********************************************************/
 void play_bit()
@@ -33,60 +51,66 @@ void play_bit()
   static int music_count = 0;
 
   bitwise = (bitwise * 2);
-  if (bitwise > 128) {
-     bitwise = 1;
-     #ifdef TEST_MODE 
-        data = pgm_read_byte_near(music + music_count);
-        music_count = (music_count + 1) % MUSIC_LEN;
-     #else 
-        if (Serial.available()>1) {
-           data = Serial.read();
-        }
-     #endif
+  if (bitwise > 128)
+  {
+    bitwise = 1;
+#ifdef TEST_MODE
+    data = pgm_read_byte_near(music + music_count);
+    music_count = (music_count + 1) % MUSIC_LEN;
+#else
+    if (Serial.available() > 1)
+    {
+      data = Serial.read();
+    }
+#endif
   }
-  digitalWrite(SOUND_PIN, (data & bitwise) );
-}
-
-void muteLed() {
-  if (!(ciclo_led >= 100000)) return;
-  
-  bool interruptor = digitalRead(7);
-  if (interruptor && !pulsed) {
-    pulsed = true;
-    muted = !muted;
-  } else if (!interruptor && pulsed) {
-    pulsed = false; 
+  if (!muted)
+  {
+    digitalWrite(SOUND_PIN, (data & bitwise));
   }
-
-  digitalWrite(13, muted);
+  else
+  {
+    digitalWrite(SOUND_PIN, 0);
+  }
 }
 
 /**********************************************************
- * Function: setup
+ * Function: muteLed
  *********************************************************/
-void setup ()
+void muteLed()
 {
-    // Initialize serial communications
-    Serial.begin(115200);
+  if (!(ciclo_led >= 100000))
+    return;
 
-    pinMode(SOUND_PIN, OUTPUT);
-    pinMode(7, INPUT);
-    pinMode(11, OUTPUT);
-    pinMode(13, OUTPUT);
-    memset (buffer, 0, BUF_SIZE);
-    timeOrig = micros(); 
+  bool interruptor = digitalRead(BUTTON_PIN);
+  if (interruptor && !pulsed)
+  {
+    pulsed = true;
+    muted = !muted;
+  }
+  else if (!interruptor && pulsed)
+  {
+    pulsed = false;
+  }
+
+  digitalWrite(LED_MUTE_PIN, muted);
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+  play_bit();
 }
 
 /**********************************************************
  * Function: loop
  *********************************************************/
-void loop ()
+void loop()
 {
-    unsigned long timeDiff;
-    muteLed();
-    play_bit();
-    timeDiff = SAMPLE_TIME - (micros() - timeOrig);
-    timeOrig = timeOrig + SAMPLE_TIME;
-    ciclo_led += SAMPLE_TIME;
-    delayMicroseconds(timeDiff);
+  unsigned long timeDiff;
+  muteLed();
+  play_bit();
+  timeDiff = SAMPLE_TIME - (micros() - timeOrig);
+  timeOrig = timeOrig + SAMPLE_TIME;
+  ciclo_led += SAMPLE_TIME;
+  delayMicroseconds(timeDiff);
 }
