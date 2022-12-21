@@ -9,7 +9,7 @@
 // COMMENT THIS LINE TO EXECUTE WITH THE PC
 #define TEST_MODE 1
 
-#define SAMPLE_TIME 250
+#define SAMPLE_TIME 250 // microseconds
 #define BUTTON_PIN 7
 #define SOUND_PIN 11
 #define LED_MUTE_PIN 13
@@ -33,11 +33,26 @@ void setup()
   // Initialize serial communications
   Serial.begin(115200);
 
+  // pin configuration
   pinMode(SOUND_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
   pinMode(SOUND_PIN, OUTPUT);
   pinMode(LED_MUTE_PIN, OUTPUT);
   memset(buffer, 0, BUF_SIZE);
+
+  // Timer configuration
+  /*
+   * Toggle on compare match
+   * Pre-scaling to 8
+   * CTC mode
+   */
+  OCR1A = 500;
+  TCCR1A = _BV(COM1A0);
+  TCCR1B = _BV(CS11) | _BV(WGM12);
+
+  TIMSK1 = _BV(OCIE1A);
+  interrupts();
+
   timeOrig = micros();
 }
 
@@ -79,8 +94,7 @@ void play_bit()
  *********************************************************/
 void muteLed()
 {
-  if (!(ciclo_led >= 100000))
-    return;
+  Serial.printf(OCR1A) if (!(ciclo_led >= 100000)) return;
 
   bool interruptor = digitalRead(BUTTON_PIN);
   if (interruptor && !pulsed)
@@ -108,7 +122,6 @@ void loop()
 {
   unsigned long timeDiff;
   muteLed();
-  play_bit();
   timeDiff = SAMPLE_TIME - (micros() - timeOrig);
   timeOrig = timeOrig + SAMPLE_TIME;
   ciclo_led += SAMPLE_TIME;
