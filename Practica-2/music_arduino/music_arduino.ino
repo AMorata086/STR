@@ -31,7 +31,8 @@ int ciclo_led = 0;
 void setup()
 {
   // Initialize serial communications
-  Serial.begin(115200);
+  //Serial.begin(115200);
+  Serial.begin(9600);
 
   // pin configuration
   pinMode(SOUND_PIN, OUTPUT);
@@ -40,44 +41,45 @@ void setup()
   pinMode(LED_MUTE_PIN, OUTPUT);
   memset(buffer, 0, BUF_SIZE);
 
+  timeOrig = micros();
+
   // Timer configuration
   /*
    * Toggle on compare match
    * Pre-scaling to 8
    * CTC mode
    */
-  OCR1A = 500;
+  OCR1A = 499;
   TCCR1A = _BV(COM1A0);
-  TCCR1B = _BV(CS11) | _BV(WGM12);
+  TCCR1B = _BV(WGM12) | _BV(CS11);
 
   TIMSK1 = _BV(OCIE1A);
   interrupts();
-
-  timeOrig = micros();
 }
 
 /**********************************************************
  * Function: play_bit
  *********************************************************/
+int bitwise = 1;
+unsigned char data = 0;
+int music_count = 0;
+
 void play_bit()
 {
-  static int bitwise = 1;
-  static unsigned char data = 0;
-  static int music_count = 0;
-
   bitwise = (bitwise * 2);
   if (bitwise > 128)
   {
     bitwise = 1;
-#ifdef TEST_MODE
-    data = pgm_read_byte_near(music + music_count);
-    music_count = (music_count + 1) % MUSIC_LEN;
-#else
-    if (Serial.available() > 1)
-    {
-      data = Serial.read();
-    }
-#endif
+    
+    #ifdef TEST_MODE
+        data = pgm_read_byte_near(music + music_count);
+        music_count = (music_count + 1) % MUSIC_LEN;
+    #else
+        if (Serial.available() > 1)
+        {
+          data = Serial.read();
+        }
+    #endif
   }
   if (!muted)
   {
@@ -94,18 +96,12 @@ void play_bit()
  *********************************************************/
 void muteLed()
 {
-  Serial.printf(OCR1A + "\n");
-  if (!(ciclo_led >= 100000))
-    return;
-
   bool interruptor = digitalRead(BUTTON_PIN);
-  if (interruptor && !pulsed)
-  {
+  if (interruptor && !pulsed) {
     pulsed = true;
     muted = !muted;
   }
-  else if (!interruptor && pulsed)
-  {
+  else if (!interruptor && pulsed) {
     pulsed = false;
   }
 
@@ -120,12 +116,13 @@ ISR(TIMER1_COMPA_vect)
 /**********************************************************
  * Function: loop
  *********************************************************/
+unsigned long timeDiff;
 void loop()
 {
-  unsigned long timeDiff;
   muteLed();
+  
+  // calcula tiempo restante y se espera hasta siguiente sampleo
   timeDiff = SAMPLE_TIME - (micros() - timeOrig);
   timeOrig = timeOrig + SAMPLE_TIME;
-  ciclo_led += SAMPLE_TIME;
-  delayMicroseconds(timeDiff);
+  //delayMicroseconds(timeDiff);
 }
