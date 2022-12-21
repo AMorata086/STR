@@ -94,7 +94,9 @@ void play_bit()
  *********************************************************/
 void muteLed()
 {
-  Serial.printf(OCR1A) if (!(ciclo_led >= 100000)) return;
+  Serial.printf(OCR1A + "\n");
+  if (!(ciclo_led >= 100000))
+    return;
 
   bool interruptor = digitalRead(BUTTON_PIN);
   if (interruptor && !pulsed)
