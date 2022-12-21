@@ -72,12 +72,33 @@ void setup()
 
 void play_bit()
 {
+<<<<<<< HEAD
   static unsigned char data = 0;
   static int music_count = 0;
   
   data = pgm_read_byte_near(music + music_count);
   music_count = (music_count + 1) % MUSIC_LEN;
   
+=======
+  static int bitwise = 1;
+  static unsigned char data = 0;
+  static int music_count = 0;
+
+  bitwise = (bitwise * 2);
+  if (bitwise > 128)
+  {
+    bitwise = 1;
+#ifdef TEST_MODE
+    data = pgm_read_byte_near(music + music_count);
+    music_count = (music_count + 1) % MUSIC_LEN;
+#else
+    if (Serial.available() > 1)
+    {
+      data = Serial.read();
+    }
+#endif
+  }
+>>>>>>> 9e2b274258e361201a5263d8f46eaa567b6cc412
   if (!muted)
   {
     OCR2A = data;
