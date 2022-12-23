@@ -27,7 +27,7 @@
 #define FILE_NAME "/let_it_be_1bit.raw"
 
 #define PERIOD_TASK_SEC    0            /* Period of Task */
-#define PERIOD_TASK_NSEC  512000000
+#define PERIOD_TASK_NSEC  64000000
 #define PERIOD_TASK2_SEC    2            /* Period of Task */
 #define PERIOD_TASK2_NSEC  0
 #define PERIOD_TASK3_SEC    5            /* Period of Task */
@@ -125,10 +125,10 @@ void *read_music()
         exit(-1);
     }
     int zero_buffer[SEND_SIZE];
-    for(int i = 0; i< SEND_SIZE; i++) {
-       zero_buffer[i] = 0;
-      }
-
+    for(int i = 0; i< SEND_SIZE; i++)
+    {
+    	zero_buffer[i] = 0;
+    }
     // loading cycle time
     cycle.tv_sec=PERIOD_TASK_SEC;
     cycle.tv_nsec=PERIOD_TASK_NSEC;
