@@ -207,9 +207,9 @@ void *task_pause()
     	pthread_mutex_lock(&bufferM);
         int localPaused = paused;
         if (localPaused == 0)
-            printf("La musica se está reproduciendo\n");
+            printf("Reproducción en marcha\n");
         else
-            printf("La musica está en pausa\n");
+            printf("Reproducción en pausa\n");
 
         pthread_mutex_unlock(&bufferM);
 
@@ -234,8 +234,8 @@ void *task_pause()
 void *status_music()
 {
     struct timespec start_task2, end_task2, diff_task2, task2_cycle;
-    task2_cycle.tv_nsec = PERIOD_TASK2_NSEC; // 0ms
-    task2_cycle.tv_sec = PERIOD_TASK2_SEC;   //5s
+    task2_cycle.tv_nsec = PERIOD_TASK2_NSEC;
+    task2_cycle.tv_sec = PERIOD_TASK2_SEC;  
 
     clock_gettime(CLOCK_REALTIME, &start_task2);
     while (1)
