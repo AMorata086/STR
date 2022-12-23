@@ -209,9 +209,9 @@ void *task_pause()
     	pthread_mutex_lock(&bufferM);
         int isPaused = paused;
         if (isPaused == 0)
-            printf("La musica se está reproduciendo\n");
+            printf("“Reproducción en marcha\n");
         else
-            printf("La musica está en pausa\n");
+            printf("Reproducción en pausa\n");
 
         pthread_mutex_unlock(&bufferM);
 
