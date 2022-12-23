@@ -209,7 +209,7 @@ void *task_pause()
     	pthread_mutex_lock(&bufferM);
         int isPaused = paused;
         if (isPaused == 0)
-            printf("“Reproducción en marcha\n");
+            printf("Reproducción en marcha\n");
         else
             printf("Reproducción en pausa\n");
 
