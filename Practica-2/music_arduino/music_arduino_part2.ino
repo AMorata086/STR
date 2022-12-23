@@ -75,8 +75,15 @@ void play_bit()
   static unsigned char data = 0;
   static int music_count = 0;
 
-  data = pgm_read_byte_near(music + music_count);
-  music_count = (music_count + 1) % MUSIC_LEN;
+	#ifdef TEST_MODE
+			data = pgm_read_byte_near(music + music_count);
+			music_count = (music_count + 1) % MUSIC_LEN;
+	#else
+			if (Serial.available() > 1)
+			{
+				data = Serial.read();
+			}
+	#endif
 
   if (!muted)
   {
