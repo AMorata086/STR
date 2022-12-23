@@ -46,7 +46,7 @@ extern int _binary_tarfile_start;
 extern int _binary_tarfile_size;
 int paused = 0;
 pthread_mutex_t bufferM;
-char aud_buffer = '1';
+char toPause = '1';
 
 /**********************************************************
  * Function: diffTime
@@ -99,6 +99,22 @@ int compTime(struct timespec t1,
     }
     return (0);
 }
+
+/**********************************************************
+ * Function: read_keyb
+ *********************************************************/
+void *read_keyb(){
+	char playPause;
+	while(0 >= scanf("%c",&playPause)){
+		if (playPause == '0'){
+			toPause = '1';
+		}
+		else if (playPause == '1'){
+			toPause = '0';
+		}
+	}
+}
+
 
 /**********************************************************
  * Function: read_music
@@ -184,15 +200,15 @@ void *task_pause()
 {
     //change code
     struct timespec start_task3, end_task3, diff_task3, task3_cycle;
-    task3_cycle.tv_nsec = PERIOD_TASK3_NSEC; // 0ms
-    task3_cycle.tv_sec = PERIOD_TASK3_SEC;   //5s
+    task3_cycle.tv_nsec = PERIOD_TASK3_NSEC;
+    task3_cycle.tv_sec = PERIOD_TASK3_SEC;
 
     clock_gettime(CLOCK_REALTIME, &start_task3);
     while (1)
     {
     	pthread_mutex_lock(&bufferM);
-        int localPaused = paused;
-        if (localPaused == 0)
+        int isPaused = paused;
+        if (isPaused == 0)
             printf("La musica se está reproduciendo\n");
         else
             printf("La musica está en pausa\n");
@@ -220,16 +236,16 @@ void *task_pause()
 void *status_music()
 {
     struct timespec start_task2, end_task2, diff_task2, task2_cycle;
-    task2_cycle.tv_nsec = PERIOD_TASK2_NSEC; // 0ms
-    task2_cycle.tv_sec = PERIOD_TASK2_SEC;   //5s
+    task2_cycle.tv_nsec = PERIOD_TASK2_NSEC;
+    task2_cycle.tv_sec = PERIOD_TASK2_SEC;
 
     clock_gettime(CLOCK_REALTIME, &start_task2);
     while (1)
     {
         pthread_mutex_lock(&bufferM);
-        if(aud_buffer == '0'){
+        if(toPause == '0'){
         	paused = 1;
-        }else if(aud_buffer == '1'){
+        }else if(toPause == '1'){
         	paused = 0;
         }
         pthread_mutex_unlock(&bufferM);
@@ -261,47 +277,49 @@ rtems_task Init (rtems_task_argument ignored)
 
    /*------------THREADS----------*/
     pthread_t play_status;
-    pthread_t status_thread;
-    pthread_t file_thread;
+    pthread_t status_music_thread;
+    pthread_t music_file_thread;
+    pthread_t scan_keyb;
     pthread_attr_t attr_tty;
-    pthread_attr_t attr_status;
-    pthread_attr_t attr_file;
+    pthread_attr_t attr_status_music;
+    pthread_attr_t attr_music_file;
     pthread_mutexattr_t m_attr;
     pthread_mutexattr_setprotocol(&m_attr, PTHREAD_PRIO_INHERIT);
     pthread_mutex_init(&bufferM, &m_attr);
     pthread_attr_init(&attr_tty);
-    pthread_attr_init(&attr_status);
-    pthread_attr_init(&attr_file);
+    pthread_attr_init(&attr_status_music);
+    pthread_attr_init(&attr_music_file);
     pthread_attr_setdetachstate(&attr_tty, PTHREAD_CREATE_JOINABLE);
-    pthread_attr_setdetachstate(&attr_status, PTHREAD_CREATE_JOINABLE);
-    pthread_attr_setdetachstate(&attr_file, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_setdetachstate(&attr_status_music, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_setdetachstate(&attr_music_file, PTHREAD_CREATE_JOINABLE);
     pthread_attr_setscope(&attr_tty, PTHREAD_SCOPE_SYSTEM);
-    pthread_attr_setscope(&attr_status, PTHREAD_SCOPE_SYSTEM);
-    pthread_attr_setscope(&attr_file, PTHREAD_SCOPE_SYSTEM);
+    pthread_attr_setscope(&attr_status_music, PTHREAD_SCOPE_SYSTEM);
+    pthread_attr_setscope(&attr_music_file, PTHREAD_SCOPE_SYSTEM);
     pthread_attr_setinheritsched(&attr_tty, PTHREAD_EXPLICIT_SCHED);
-    pthread_attr_setinheritsched(&attr_status, PTHREAD_EXPLICIT_SCHED);
-    pthread_attr_setinheritsched(&attr_file, PTHREAD_EXPLICIT_SCHED);
+    pthread_attr_setinheritsched(&attr_status_music, PTHREAD_EXPLICIT_SCHED);
+    pthread_attr_setinheritsched(&attr_music_file, PTHREAD_EXPLICIT_SCHED);
     pthread_attr_setschedpolicy(&attr_tty, SCHED_FIFO);
-    pthread_attr_setschedpolicy(&attr_status, SCHED_FIFO);
-    pthread_attr_setschedpolicy(&attr_file, SCHED_FIFO);
+    pthread_attr_setschedpolicy(&attr_status_music, SCHED_FIFO);
+    pthread_attr_setschedpolicy(&attr_music_file, SCHED_FIFO);
     struct sched_param tty_param;
-    struct sched_param status_param;
-    struct sched_param file_param;
-    file_param.sched_priority = 3;
+    struct sched_param status_music_param;
+    struct sched_param music_file_param;
+    music_file_param.sched_priority = 3;
     tty_param.sched_priority = 2;
-    status_param.sched_priority = 1;
+    status_music_param.sched_priority = 1;
     pthread_attr_setschedparam(&attr_tty, &tty_param);
-    pthread_attr_setschedparam(&attr_status, &status_param);
-    pthread_attr_setschedparam(&attr_file, &file_param);
-    pthread_create(&file_thread, &attr_file, read_music, NULL);
+    pthread_attr_setschedparam(&attr_status_music, &status_music_param);
+    pthread_attr_setschedparam(&attr_music_file, &music_file_param);
+    pthread_create(&music_file_thread, &attr_music_file, read_music, NULL);
     pthread_create(&play_status, &attr_tty, task_pause, NULL);
-    pthread_create(&status_thread, &attr_status,status_music, NULL);
+    phtread_create(&scan_keyb, NULL, read_keyb, NULL);
+    pthread_create(&status_music_thread, &attr_status_music,status_music, NULL);
     pthread_join(play_status, NULL);
-    pthread_join(status_thread, NULL);
-    pthread_join(file_thread, NULL);
+    pthread_join(status_music_thread, NULL);
+    pthread_join(music_file_thread, NULL);
     pthread_attr_destroy(&attr_tty);
-    pthread_attr_destroy(&attr_status);
-    pthread_attr_destroy(&attr_file);
+    pthread_attr_destroy(&attr_status_music);
+    pthread_attr_destroy(&attr_music_file);
     pthread_exit(0);
     exit(0);
 
